@@ -37,7 +37,7 @@ Binary tiles never enter git history. They live as assets on a GitHub Release (`
 1. Run the pipeline locally for the changed layer (`pipeline/README.md`).
 2. Bump the file version (for example `magnetic.v2.pmtiles`) and `layers.json`.
 3. Publish a new release: `gh release create data-v2 pipeline/out/* --title "Data v2"`.
-4. Set the repository variable `DATA_RELEASE=data-v2`. Publishing a release triggers **Deploy app** automatically.
+4. Set the repository variable `DATA_RELEASE=data-v2` and run **Deploy app** (Actions tab, or `gh workflow run deploy-app.yml`). The `github-pages` environment only accepts deployments from `main`, so a release does not deploy by itself.
 
 Old files stay on their old release, so rolling back is changing `DATA_RELEASE` back.
 
