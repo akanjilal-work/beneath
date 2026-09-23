@@ -4,7 +4,7 @@
 
 | Piece | Host today | Upgrade path | Cost |
 |---|---|---|---|
-| App | GitHub Pages (`akanjilal-work.github.io/beneath`) | Custom domain `beneath.akanjilal.dev` | Free |
+| App | GitHub Pages on `beneath.akanjilal.dev` (Cloudflare DNS-only CNAME to `akanjilal-work.github.io`) | | Free |
 | Tiles and JSON | GitHub Pages, same origin as the app, copied in from a GitHub Release at deploy time | Cloudflare R2 public bucket on `data.beneath.akanjilal.dev` | Free |
 | Live Kp | Browser reads NOAA SWPC directly (CORS allowed) | Cloudflare Worker cron writing `live/kp.json` to R2 | Free |
 | Pipeline | Local machine | Manual GitHub Action | Free |
@@ -62,7 +62,7 @@ Old files stay on their old release, so rolling back is changing `DATA_RELEASE` 
 5. Cache rules: long cache (`max-age=31536000, immutable`) for versioned `*.v*.pmtiles`, 60 s for `layers.json` and `live/*.json`.
 6. Set the repository variable `VITE_DATA_BASE_URL=https://data.beneath.akanjilal.dev/` and re-run **Deploy app**. With that variable set, the workflow no longer bundles the release.
 
-## Custom domain for the app
+## Custom domain for the app (done)
 
 1. Cloudflare DNS for `akanjilal.dev`: add a `CNAME` record `beneath` pointing to `akanjilal-work.github.io`, **DNS only** (grey cloud), so GitHub can issue the TLS certificate.
 2. GitHub repository **Settings**, then **Pages**, then **Custom domain**: `beneath.akanjilal.dev`, then tick **Enforce HTTPS** once the certificate is issued.

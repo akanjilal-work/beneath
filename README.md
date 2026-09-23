@@ -4,7 +4,7 @@ An explorable 3D globe of what lies under the Earth's surface: magnetic anomalie
 
 Think Earth Nullschool, but for the subsurface.
 
-**Live:** https://akanjilal-work.github.io/beneath/
+**Live:** https://beneath.akanjilal.dev/
 
 ## What you can do
 
