@@ -1,0 +1,66 @@
+name: Deploy app
+
+on:
+  push:
+    branches: [main]
+    paths: ["app/**", ".github/workflows/deploy-app.yml"]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  # GitHub Release holding the PMTiles and JSON produced by pipeline/. Change to roll data forward.
+  DATA_RELEASE: ${{ vars.DATA_RELEASE || 'data-v1' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+        env:
+          VITE_DATA_BASE_URL: ${{ vars.VITE_DATA_BASE_URL }}
+          VITE_LIVE_KP_URL: ${{ vars.VITE_LIVE_KP_URL }}
+      - name: Bundle data from release
+        # Skipped when tiles are served from R2 (VITE_DATA_BASE_URL set).
+        if: ${{ vars.VITE_DATA_BASE_URL == '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p dist/data
+          gh release download "$DATA_RELEASE" --repo "$GITHUB_REPOSITORY" --dir dist/data
+          ls -la dist/data
+          test -f dist/data/layers.json
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: app/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

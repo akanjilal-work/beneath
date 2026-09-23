@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "files": {
+    "EGM2008.gfc": {
+      "url": "http://icgem.gfz-potsdam.de/getmodel/gfc/c50128797a9cb62e936337c890e4425f03f0461d7329b09a8cc8561504465340/EGM2008.gfc",
+      "sha256": "ab5b524da073e63b5bdceb7ca47a0de07a26dd44a1c5798f39fc98dc80af70fd",
+      "bytes": 252140870,
+      "downloaded": "2026-09-22",
+      "licence": "Public domain (US Government, NGA)"
+    },
+    "EMAG2_V3_20170530_UpCont.tif": {
+      "url": "https://www.ngdc.noaa.gov/geomag/data/EMAG2/EMAG2_V3_20170530/EMAG2_V3_20170530_UpCont.tif",
+      "sha256": "719db9d060a423b7292f09fa4312e7d0ebd4e284ba652079b34e3d05be5a370a",
+      "bytes": 239593097,
+      "downloaded": "2026-09-22",
+      "licence": "Public domain (US Government)"
+    },
+    "PB2002_plates.json": {
+      "url": "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json",
+      "sha256": "922918f970baf7e645821a4a728b945dbb5eeac1337d71d087fba021bcc79e21",
+      "bytes": 327718,
+      "downloaded": "2026-09-22",
+      "licence": "ODC-By 1.0"
+    },
+    "PB2002_steps.json": {
+      "url": "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_steps.json",
+      "sha256": "528fdeb1d57eb3d4c6e730951eabc6fd7da9dbc5fc7038b9f19100c52b986c9a",
+      "bytes": 10371475,
+      "downloaded": "2026-09-22",
+      "licence": "ODC-By 1.0"
+    },
+    "admin1CodesASCII.txt": {
+      "url": "https://download.geonames.org/export/dump/admin1CodesASCII.txt",
+      "sha256": "1da92a6323a5fec3176f3f743bf4cf4040fd56a876da55e46fbca23c863aa60a",
+      "bytes": 151583,
+      "downloaded": "2026-09-22",
+      "licence": "CC BY 4.0"
+    },
+    "cities15000.zip": {
+      "url": "https://download.geonames.org/export/dump/cities15000.zip",
+      "sha256": "4337eb85ddef43a7d6164ba4d49379c1ef866ce5ceacda0fb1378abfc8cea2dd",
+      "bytes": 3359366,
+      "downloaded": "2026-09-22",
+      "licence": "CC BY 4.0"
+    },
+    "countryInfo.txt": {
+      "url": "https://download.geonames.org/export/dump/countryInfo.txt",
+      "sha256": "93bafc525813f22e4711ff9ed6d626343094ce48c26388dc7c49189b3d7d5512",
+      "bytes": 31678,
+      "downloaded": "2026-09-22",
+      "licence": "CC BY 4.0"
+    },
+    "mrds-csv.zip": {
+      "url": "https://mrdata.usgs.gov/mrds/mrds-csv.zip",
+      "sha256": "31be4baaa86b082787bc74989146183db21badf7157db39b3f0a6fe0b38a5477",
+      "bytes": 25791223,
+      "downloaded": "2026-09-22",
+      "licence": "Public domain (US Government)"
+    },
+    "ne_50m_coastline.geojson": {
+      "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_50m_coastline.geojson",
+      "sha256": "271f1c4c1908312bac6b29d158ea1356544beafc129f260005300913aa5ea283",
+      "bytes": 1640858,
+      "downloaded": "2026-09-22",
+      "licence": "Public domain"
+    },
+    "nrcan_900A_coal.geojson": {
+      "url": "https://maps-cartes.services.geo.ca/server_serveur/rest/services/NRCan/900A_and_top_100_en/MapServer/5/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&orderByFields=OBJECTID&f=geojson",
+      "sha256": "3e53519c685bd31e1e222f0cac9f9a3874cf7232f7c70df6140d546bc9263863",
+      "bytes": 5763,
+      "downloaded": "2026-09-22",
+      "licence": "Open Government Licence - Canada 2.0"
+    },
+    "nrcan_900A_metals.geojson": {
+      "url": "https://maps-cartes.services.geo.ca/server_serveur/rest/services/NRCan/900A_and_top_100_en/MapServer/3/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&orderByFields=OBJECTID&f=geojson",
+      "sha256": "5ae27daab542019f6047e5cef7e88d05f0d7c4f5e3a8e459b3990e3fb7804e98",
+      "bytes": 44341,
+      "downloaded": "2026-09-22",
+      "licence": "Open Government Licence - Canada 2.0"
+    },
+    "nrcan_900A_nonmetals.geojson": {
+      "url": "https://maps-cartes.services.geo.ca/server_serveur/rest/services/NRCan/900A_and_top_100_en/MapServer/4/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&orderByFields=OBJECTID&f=geojson",
+      "sha256": "cf25575764b46ba61832b3d83b456c3444c620da73fd95bcfd6ced953c515145",
+      "bytes": 43787,
+      "downloaded": "2026-09-22",
+      "licence": "Open Government Licence - Canada 2.0"
+    }
+  }
+}

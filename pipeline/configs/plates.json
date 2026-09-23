@@ -1,0 +1,30 @@
+{
+  "id": "plates",
+  "name": "Plate boundaries",
+  "kind": "vector",
+  "file": "plates.v1.geojson",
+  "polygons": "plate-polygons.v1.geojson",
+  "sources": {
+    "steps": {
+      "url": "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_steps.json",
+      "filename": "PB2002_steps.json"
+    },
+    "plates": {
+      "url": "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json",
+      "filename": "PB2002_plates.json"
+    }
+  },
+  "attribution": "Bird (2003) PB2002; GIS conversion by Nordpil (github.com/fraxen/tectonicplates)",
+  "licence": "ODC-By 1.0",
+  "sourceUrl": "https://github.com/fraxen/tectonicplates",
+  "citation": "Bird, P. (2003). An updated digital model of plate boundaries. Geochemistry, Geophysics, Geosystems, 4(3), 1027. doi:10.1029/2001GC000252",
+  "typeValues": {
+    "SUB": "Subduction zone",
+    "OSR": "Oceanic spreading ridge",
+    "OTF": "Oceanic transform fault",
+    "OCB": "Oceanic convergent boundary",
+    "CRB": "Continental rift boundary",
+    "CTF": "Continental transform fault",
+    "CCB": "Continental convergent boundary"
+  }
+}

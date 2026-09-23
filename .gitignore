@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.pmtiles
+pipeline/sources/raw/
+pipeline/out/
+.wrangler/
+.env
+.DS_Store

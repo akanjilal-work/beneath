@@ -1,0 +1,365 @@
+import {
+  ArcType,
+  buildModuleUrl,
+  Cartesian3,
+  Cartographic,
+  Color,
+  ColorGeometryInstanceAttribute,
+  DistanceDisplayCondition,
+  GeometryInstance,
+  ImageryLayer,
+  Ion,
+  Math as CesiumMath,
+  NearFarScalar,
+  PointPrimitiveCollection,
+  PolylineColorAppearance,
+  PolylineGeometry,
+  Primitive,
+  SceneMode,
+  SingleTileImageryProvider,
+  ScreenSpaceEventHandler,
+  ScreenSpaceEventType,
+  TileMapServiceImageryProvider,
+  Viewer,
+  type PointPrimitive,
+} from "cesium";
+import "cesium/Build/Cesium/Widgets/widgets.css";
+import type { Deposit } from "../data/deposits";
+import type { PlateModel } from "../data/plates";
+
+// No Cesium ion: base imagery is the Natural Earth II tiles shipped inside the Cesium package.
+Ion.defaultAccessToken = "";
+
+export interface Globe {
+  viewer: Viewer;
+  onPick(fn: (lon: number, lat: number, deposit: Deposit | null) => void): void;
+  onInteract(fn: () => void): void;
+  onCameraIdle(fn: (lat: number, lon: number, alt: number) => void): void;
+  flyTo(lat: number, lon: number, alt?: number, duration?: number): void;
+  setView(lat: number, lon: number, alt: number): void;
+  addValueLayer(layer: ImageryLayer): void;
+  setBoundaries(model: PlateModel, emphasis: number): void;
+  setBoundaryVisible(show: boolean): void;
+  setBoundaryEmphasis(emphasis: number): void;
+  setPlateFill(model: PlateModel, alpha: number): Promise<void>;
+  setDeposits(deposits: Deposit[]): void;
+  setDepositsVisible(show: boolean): void;
+  setCoastlines(lines: number[][][]): void;
+  setCoastlinesVisible(show: boolean): void;
+  setPickMarker(lat: number, lon: number): void;
+  clearPickMarker(): void;
+  setMode(mode: "3d" | "2d"): void;
+  setAutoRotate(on: boolean): void;
+  setTheme(theme: "dark" | "light"): void;
+}
+
+/** Stable, distinct hue per plate (golden-ratio spacing). */
+export function plateColour(i: number): string {
+  const hue = Math.round(((i * 0.618034) % 1) * 360);
+  return `hsl(${hue} 55% 58%)`;
+}
+
+/** Rasterise plate polygons to an equirectangular image; robust across the antimeridian and poles. */
+function renderPlateCanvas(model: PlateModel): string {
+  const w = 4096;
+  const h = 2048;
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d")!;
+  const px = (lon: number) => ((lon + 180) / 360) * w;
+  const py = (lat: number) => ((90 - lat) / 180) * h;
+  model.plates.forEach((p, i) => {
+    ctx.fillStyle = plateColour(i);
+    for (const shift of [-360, 0, 360]) {
+      ctx.beginPath();
+      for (const poly of p.polygons) {
+        for (const ring of poly) {
+          ring.forEach(([x, y], k) => (k ? ctx.lineTo(px(x + shift), py(y)) : ctx.moveTo(px(x + shift), py(y))));
+          ctx.closePath();
+        }
+      }
+      ctx.fill("evenodd");
+    }
+  });
+  return canvas.toDataURL("image/png");
+}
+
+const STATUS_SIZE = [7, 6, 5, 4]; // producer, past producer, prospect, occurrence
+// Camera distance (m) below which each status appears. 200k points at once is noise, so
+// producers show from space and smaller sites fade in as you zoom. Industrial minerals
+// (sand, gravel, stone) are the most numerous, so they wait until you are closer still.
+const STATUS_MAX_DISTANCE = [8_000_000, 1_200_000, 600_000, 400_000];
+
+function depositMaxDistance(d: Deposit): number {
+  const base = STATUS_MAX_DISTANCE[d.statusIndex] ?? 400_000;
+  return d.group.key === "industrial" ? base * 0.25 : base;
+}
+
+export async function createGlobe(container: HTMLElement, creditContainer: HTMLElement): Promise<Globe> {
+  const baseProvider = await TileMapServiceImageryProvider.fromUrl(buildModuleUrl("Assets/Textures/NaturalEarthII"));
+  const viewer = new Viewer(container, {
+    baseLayer: new ImageryLayer(baseProvider),
+    baseLayerPicker: false,
+    geocoder: false,
+    homeButton: false,
+    sceneModePicker: false,
+    navigationHelpButton: false,
+    animation: false,
+    timeline: false,
+    fullscreenButton: false,
+    infoBox: false,
+    selectionIndicator: false,
+    creditContainer,
+    requestRenderMode: true,
+    maximumRenderTimeChange: Infinity,
+  });
+  const { scene, camera } = viewer;
+  scene.globe.baseColor = Color.fromCssColorString("#0b1220");
+  scene.globe.showGroundAtmosphere = true;
+  scene.globe.enableLighting = false;
+  scene.fog.enabled = false;
+  // Ask for finer tiles than the default (2): the data layers are the point of the app,
+  // and with no terrain the extra tiles are cheap. Lower values sharpen further but slow
+  // the first load on phones.
+  scene.globe.maximumScreenSpaceError = 1;
+  scene.screenSpaceCameraController.minimumZoomDistance = 20_000;
+  scene.screenSpaceCameraController.maximumZoomDistance = 40_000_000;
+  viewer.cesiumWidget.creditContainer.classList.add("cesium-credits");
+
+  // --- vector overlays -------------------------------------------------------------------
+  let boundaryPrimitive: Primitive | null = null;
+  let boundaryModel: PlateModel | null = null;
+  let boundaryVisible = true;
+  let boundaryEmphasis = 0;
+  let plateLayer: ImageryLayer | null = null;
+  let coastPrimitive: Primitive | null = null;
+  const points = scene.primitives.add(new PointPrimitiveCollection()) as PointPrimitiveCollection;
+  const pickMarker = scene.primitives.add(new PointPrimitiveCollection()) as PointPrimitiveCollection;
+
+  function lineInstances(lines: number[][][], colour: (i: number) => Color, width: number, ids?: unknown[]) {
+    const instances: GeometryInstance[] = [];
+    lines.forEach((line, i) => {
+      if (line.length < 2) return;
+      const positions = Cartesian3.fromDegreesArray(line.flatMap(([x, y]) => [x, y]));
+      instances.push(
+        new GeometryInstance({
+          geometry: new PolylineGeometry({ positions, width, arcType: ArcType.GEODESIC, vertexFormat: PolylineColorAppearance.VERTEX_FORMAT }),
+          attributes: { color: ColorGeometryInstanceAttribute.fromColor(colour(i)) },
+          id: ids?.[i],
+        }),
+      );
+    });
+    return instances;
+  }
+
+  function buildBoundaries() {
+    if (boundaryPrimitive) scene.primitives.remove(boundaryPrimitive);
+    boundaryPrimitive = null;
+    if (!boundaryModel) return;
+    const lines: number[][][] = [];
+    const colours: Color[] = [];
+    for (const b of boundaryModel.boundaries) {
+      for (const l of b.lines) {
+        lines.push(l);
+        colours.push(Color.fromCssColorString(b.cls.colour).withAlpha(0.55 + 0.45 * boundaryEmphasis));
+      }
+    }
+    boundaryPrimitive = scene.primitives.add(
+      new Primitive({
+        geometryInstances: lineInstances(lines, (i) => colours[i], 1.5 + 2 * boundaryEmphasis),
+        appearance: new PolylineColorAppearance({ translucent: true }),
+        asynchronous: false,
+        show: boundaryVisible,
+      }),
+    ) as Primitive;
+    scene.requestRender();
+  }
+
+  // --- interaction ---------------------------------------------------------------------
+  const handler = new ScreenSpaceEventHandler(scene.canvas);
+  const pickListeners: ((lon: number, lat: number, d: Deposit | null) => void)[] = [];
+  const interactListeners: (() => void)[] = [];
+  const idleListeners: ((lat: number, lon: number, alt: number) => void)[] = [];
+
+  handler.setInputAction((e: ScreenSpaceEventHandler.PositionedEvent) => {
+    const picked = scene.pick(e.position);
+    let deposit: Deposit | null = null;
+    if (picked?.primitive && (picked.primitive as PointPrimitive).id && picked.collection === points) {
+      deposit = (picked.primitive as PointPrimitive).id as Deposit;
+    }
+    let lon: number;
+    let lat: number;
+    if (deposit) {
+      lon = deposit.lon;
+      lat = deposit.lat;
+    } else {
+      const cart = camera.pickEllipsoid(e.position, scene.globe.ellipsoid);
+      if (!cart) return;
+      const c = Cartographic.fromCartesian(cart);
+      lon = CesiumMath.toDegrees(c.longitude);
+      lat = CesiumMath.toDegrees(c.latitude);
+    }
+    for (const fn of pickListeners) fn(lon, lat, deposit);
+  }, ScreenSpaceEventType.LEFT_CLICK);
+
+  // Pointer cursor over deposits.
+  handler.setInputAction((e: ScreenSpaceEventHandler.MotionEvent) => {
+    if (!points.show || points.length === 0) return;
+    const picked = scene.pick(e.endPosition);
+    scene.canvas.style.cursor = picked?.collection === points ? "pointer" : "";
+  }, ScreenSpaceEventType.MOUSE_MOVE);
+
+  const notifyInteract = () => interactListeners.forEach((fn) => fn());
+  for (const type of ["pointerdown", "wheel", "touchstart", "keydown"]) {
+    scene.canvas.addEventListener(type, notifyInteract, { passive: true });
+  }
+
+  camera.moveEnd.addEventListener(() => {
+    const c = camera.positionCartographic;
+    const lat = CesiumMath.toDegrees(c.latitude);
+    const lon = CesiumMath.toDegrees(c.longitude);
+    idleListeners.forEach((fn) => fn(lat, lon, c.height));
+  });
+
+  // --- auto rotate ---------------------------------------------------------------------
+  let rotating = false;
+  let lastTick = performance.now();
+  scene.preRender.addEventListener(() => {
+    const now = performance.now();
+    const dt = (now - lastTick) / 1000;
+    lastTick = now;
+    if (rotating && scene.mode === SceneMode.SCENE3D) {
+      camera.rotate(Cartesian3.UNIT_Z, -0.035 * Math.min(dt, 0.1));
+      scene.requestRender();
+    }
+  });
+  scene.postRender.addEventListener(() => {
+    if (rotating) scene.requestRender();
+  });
+
+  const api: Globe = {
+    viewer,
+    onPick: (fn) => pickListeners.push(fn),
+    onInteract: (fn) => interactListeners.push(fn),
+    onCameraIdle: (fn) => idleListeners.push(fn),
+
+    flyTo(lat, lon, alt, duration = 1.6) {
+      const height = alt ?? Math.min(camera.positionCartographic.height, 2_500_000);
+      camera.flyTo({ destination: Cartesian3.fromDegrees(lon, lat, height), duration });
+    },
+    setView(lat, lon, alt) {
+      camera.setView({ destination: Cartesian3.fromDegrees(lon, lat, alt) });
+    },
+    addValueLayer(layer) {
+      viewer.imageryLayers.add(layer);
+      scene.requestRender();
+    },
+
+    setBoundaries(model, emphasis) {
+      boundaryModel = model;
+      boundaryEmphasis = emphasis;
+      buildBoundaries();
+    },
+    setBoundaryVisible(show) {
+      boundaryVisible = show;
+      if (boundaryPrimitive) boundaryPrimitive.show = show;
+      scene.requestRender();
+    },
+    setBoundaryEmphasis(emphasis) {
+      const e = Math.round(emphasis * 4) / 4;
+      if (e === boundaryEmphasis) return;
+      boundaryEmphasis = e;
+      buildBoundaries();
+    },
+
+    async setPlateFill(model, alpha) {
+      if (!plateLayer && alpha > 0.01) {
+        const url = renderPlateCanvas(model);
+        plateLayer = viewer.imageryLayers.addImageryProvider(await SingleTileImageryProvider.fromUrl(url));
+      }
+      if (plateLayer) {
+        plateLayer.alpha = alpha;
+        plateLayer.show = alpha > 0.01;
+        // Keep plates above the value layers but below nothing else.
+        viewer.imageryLayers.raiseToTop(plateLayer);
+      }
+      scene.requestRender();
+    },
+
+    setDeposits(deposits) {
+      points.removeAll();
+      for (const d of deposits) {
+        const size = STATUS_SIZE[d.statusIndex] ?? 4;
+        points.add({
+          position: Cartesian3.fromDegrees(d.lon, d.lat),
+          color: Color.fromCssColorString(d.group.colour),
+          pixelSize: size,
+          outlineColor: d.statusIndex === 0 ? Color.WHITE : Color.BLACK.withAlpha(0.6),
+          outlineWidth: d.statusIndex === 0 ? 1.5 : 0.5,
+          scaleByDistance: new NearFarScalar(3e5, 1.3, 2e7, 0.5),
+          distanceDisplayCondition: new DistanceDisplayCondition(0, depositMaxDistance(d)),
+          id: d,
+        });
+      }
+      scene.requestRender();
+    },
+    setDepositsVisible(show) {
+      points.show = show;
+      scene.requestRender();
+    },
+
+    setCoastlines(lines) {
+      if (coastPrimitive) scene.primitives.remove(coastPrimitive);
+      coastPrimitive = scene.primitives.add(
+        new Primitive({
+          geometryInstances: lineInstances(lines, () => Color.WHITE.withAlpha(0.45), 1),
+          appearance: new PolylineColorAppearance({ translucent: true }),
+          asynchronous: true,
+        }),
+      ) as Primitive;
+      scene.requestRender();
+    },
+    setCoastlinesVisible(show) {
+      if (coastPrimitive) coastPrimitive.show = show;
+      scene.requestRender();
+    },
+
+    setPickMarker(lat, lon) {
+      pickMarker.removeAll();
+      pickMarker.add({
+        position: Cartesian3.fromDegrees(lon, lat),
+        pixelSize: 12,
+        color: Color.TRANSPARENT,
+        outlineColor: Color.WHITE,
+        outlineWidth: 3,
+        disableDepthTestDistance: 0,
+      });
+      scene.requestRender();
+    },
+    clearPickMarker() {
+      pickMarker.removeAll();
+      scene.requestRender();
+    },
+
+    setMode(mode) {
+      const want = mode === "2d" ? SceneMode.SCENE2D : SceneMode.SCENE3D;
+      if (scene.mode === want) return;
+      if (mode === "2d") scene.morphTo2D(0.8);
+      else scene.morphTo3D(0.8);
+    },
+    setAutoRotate(on) {
+      rotating = on;
+      lastTick = performance.now();
+      scene.requestRender();
+    },
+    setTheme(theme) {
+      scene.backgroundColor = Color.fromCssColorString(theme === "dark" ? "#05080f" : "#dfe6ee");
+      if (scene.skyBox) scene.skyBox.show = theme === "dark";
+      if (scene.sun) scene.sun.show = false;
+      if (scene.moon) scene.moon.show = false;
+      scene.requestRender();
+    },
+  };
+  return api;
+}

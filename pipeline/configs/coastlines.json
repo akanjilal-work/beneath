@@ -1,0 +1,17 @@
+{
+  "id": "coastlines",
+  "name": "Coastlines",
+  "kind": "vector",
+  "file": "coastlines.v1.geojson",
+  "sources": {
+    "coastline": {
+      "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_50m_coastline.geojson",
+      "filename": "ne_50m_coastline.geojson"
+    }
+  },
+  "attribution": "Natural Earth",
+  "licence": "Public domain",
+  "sourceUrl": "https://www.naturalearthdata.com/",
+  "citation": "Made with Natural Earth. Free vector and raster map data @ naturalearthdata.com.",
+  "description": "Natural Earth 1:50m coastlines, drawn over the data layers for orientation."
+}

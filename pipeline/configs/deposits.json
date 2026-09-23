@@ -1,0 +1,45 @@
+{
+  "id": "deposits",
+  "name": "Mineral deposits",
+  "kind": "points",
+  "file": "deposits.v1.json",
+  "mrds": {
+    "url": "https://mrdata.usgs.gov/mrds/mrds-csv.zip",
+    "filename": "mrds-csv.zip",
+    "keepStatus": [
+      "Producer",
+      "Past Producer",
+      "Prospect"
+    ]
+  },
+  "nrcan900a": {
+    "service": "https://maps-cartes.services.geo.ca/server_serveur/rest/services/NRCan/900A_and_top_100_en/MapServer",
+    "layers": {
+      "3": "metals",
+      "4": "nonmetals",
+      "5": "coal"
+    }
+  },
+  "sources": [
+    {
+      "id": "mrds",
+      "name": "USGS Mineral Resources Data System",
+      "licence": "Public domain (US Government)",
+      "url": "https://mrdata.usgs.gov/mrds/",
+      "legacy": true,
+      "citation": "U.S. Geological Survey (2005). Mineral Resources Data System. U.S. Geological Survey, Reston, Virginia. Not updated since 2011."
+    },
+    {
+      "id": "nrcan-900a",
+      "name": "NRCan Principal Mineral Areas, Producing Mines, and Oil and Gas Fields (900A)",
+      "licence": "Open Government Licence - Canada 2.0",
+      "url": "https://open.canada.ca/data/en/dataset/000183ed-8864-42f0-ae43-c4313a860720",
+      "legacy": false,
+      "citation": "Contains information licensed under the Open Government Licence - Canada. Natural Resources Canada, Principal Mineral Areas, Producing Mines, and Oil and Gas Fields (900A)."
+    }
+  ],
+  "attribution": "USGS MRDS; Natural Resources Canada (900A)",
+  "licence": "Public domain (USGS MRDS); Open Government Licence - Canada 2.0 (NRCan)",
+  "sourceUrl": "https://mrdata.usgs.gov/mrds/",
+  "citation": "USGS Mineral Resources Data System (legacy, not updated since 2011). Contains information licensed under the Open Government Licence - Canada (Natural Resources Canada, Principal Mineral Areas, Producing Mines, and Oil and Gas Fields, map 900A)."
+}

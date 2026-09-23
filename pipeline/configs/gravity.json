@@ -1,0 +1,22 @@
+{
+  "id": "gravity",
+  "name": "Gravity anomaly (free-air)",
+  "kind": "raster-value",
+  "file": "gravity.v1.pmtiles",
+  "units": "mGal",
+  "scale": 0.1,
+  "minzoom": 0,
+  "maxzoom": 5,
+  "lmax": 2190,
+  "source": {
+    "url": "http://icgem.gfz-potsdam.de/getmodel/gfc/c50128797a9cb62e936337c890e4425f03f0461d7329b09a8cc8561504465340/EGM2008.gfc",
+    "filename": "EGM2008.gfc",
+    "sha256": "ab5b524da073e63b5bdceb7ca47a0de07a26dd44a1c5798f39fc98dc80af70fd",
+    "licence": "Public domain (US Government, NGA)"
+  },
+  "attribution": "EGM2008, NGA",
+  "licence": "Public domain (US Government)",
+  "sourceUrl": "https://earth-info.nga.mil/index.php?dir=wgs84&action=wgs84",
+  "citation": "Pavlis, N. K., Holmes, S. A., Kenyon, S. C., Factor, J. K. (2012). The development and evaluation of the Earth Gravitational Model 2008 (EGM2008). Journal of Geophysical Research: Solid Earth, 117, B04406. doi:10.1029/2011JB008916",
+  "description": "Free-air gravity anomaly in spherical approximation, dg = -dT/dr - 2T/r, evaluated on the WGS84 ellipsoid (h = 0). T = EGM2008 (tide-free, degrees 2..2190) minus the WGS84 normal potential (even zonal terms to degree 10). Coefficients from the ICGEM copy of EGM2008. Bilinear-resampled to geographic (EPSG:4326) pixel centres at level 5, 2x2 means below."
+}

@@ -1,0 +1,15 @@
+{
+  "id": "places",
+  "name": "Places",
+  "kind": "gazetteer",
+  "file": "places.v1.json",
+  "sources": {
+    "cities": {"url": "https://download.geonames.org/export/dump/cities15000.zip", "filename": "cities15000.zip"},
+    "countries": {"url": "https://download.geonames.org/export/dump/countryInfo.txt", "filename": "countryInfo.txt"},
+    "admin1": {"url": "https://download.geonames.org/export/dump/admin1CodesASCII.txt", "filename": "admin1CodesASCII.txt"}
+  },
+  "attribution": "GeoNames",
+  "licence": "CC BY 4.0",
+  "sourceUrl": "https://www.geonames.org/",
+  "citation": "GeoNames geographical database (geonames.org), cities15000, licensed under CC BY 4.0."
+}

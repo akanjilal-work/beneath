@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Beneath</title>
+    <meta name="description" content="An explorable 3D globe of what lies under the Earth's surface: magnetic anomalies, gravity, mineral deposits and tectonic plates." />
+    <meta name="theme-color" content="#05080f" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Beneath" />
+    <meta property="og:description" content="Rotate the Earth, peel back the surface, and see what is underneath any point on the planet." />
+    <meta property="og:image" content="https://akanjilal-work.github.io/beneath/og-image.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <a class="skip-link" href="#layers-panel">Skip to layer controls</a>
+
+    <header class="topbar">
+      <div class="brand" aria-label="Beneath">
+        <svg viewBox="0 0 32 32" aria-hidden="true" class="brand-mark">
+          <circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2" />
+          <path d="M5 18c4-3 7 3 11 0s7 3 11 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          <path d="M7 23c3-2 6 2 9 0s6 2 9 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".6" />
+        </svg>
+        <span>BENEATH</span>
+      </div>
+
+      <div class="search" role="search">
+        <label for="search-input" class="visually-hidden">Search place or lat, lon</label>
+        <input
+          id="search-input"
+          type="search"
+          placeholder="Search place or lat, lon"
+          autocomplete="off"
+          role="combobox"
+          aria-expanded="false"
+          aria-controls="search-results"
+          aria-autocomplete="list"
+        />
+        <ul id="search-results" class="search-results" role="listbox" hidden></ul>
+      </div>
+
+      <div class="topbar-actions">
+        <button id="kp-badge" class="kp-badge" type="button" hidden aria-haspopup="dialog">
+          <span class="kp-dot" aria-hidden="true"></span>
+          <span class="kp-text">Survey conditions</span>
+        </button>
+        <div class="segmented" role="group" aria-label="View mode">
+          <button type="button" data-mode="2d" aria-pressed="false">2D</button>
+          <button type="button" data-mode="3d" aria-pressed="true">3D</button>
+        </div>
+        <button id="theme-toggle" class="icon-button" type="button" aria-label="Switch to light theme">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" fill="currentColor" /></svg>
+        </button>
+        <button id="help-button" class="icon-button" type="button" aria-label="About Beneath" aria-haspopup="dialog">?</button>
+      </div>
+    </header>
+
+    <main class="stage">
+      <div id="globe" class="globe" aria-label="Interactive globe. Click or tap a point to see what lies beneath it."></div>
+
+      <aside id="layers-panel" class="panel layers-panel" aria-label="Layers" tabindex="-1">
+        <button class="sheet-handle" type="button" aria-expanded="false" aria-controls="layers-body">
+          <span>Layers</span>
+        </button>
+        <div id="layers-body" class="panel-body">
+          <h2 class="panel-title">Layers</h2>
+          <fieldset class="layer-group">
+            <legend>Beneath the surface</legend>
+            <div id="depth-radios" class="radio-list"></div>
+          </fieldset>
+          <fieldset class="layer-group">
+            <legend>Overlays</legend>
+            <div id="overlay-checks" class="check-list"></div>
+          </fieldset>
+          <fieldset class="layer-group">
+            <legend>Display</legend>
+            <label class="row-control">
+              <span>Colour ramp</span>
+              <select id="ramp-select">
+                <option value="diverging">Diverging (centred on zero)</option>
+                <option value="sequential">Sequential</option>
+              </select>
+            </label>
+            <label class="check">
+              <input id="relief-toggle" type="checkbox" checked />
+              <span>Relief shading</span>
+            </label>
+          </fieldset>
+          <p class="disclaimer">Educational only. Not an exploration or investment tool.</p>
+        </div>
+      </aside>
+
+      <aside id="click-card" class="panel click-card" aria-live="polite" aria-label="What lies beneath this point" hidden>
+        <button id="card-close" class="icon-button card-close" type="button" aria-label="Close">×</button>
+        <div id="card-content"></div>
+      </aside>
+
+      <div id="loading" class="loading" role="status">
+        <div class="loading-ring" aria-hidden="true"></div>
+        <span>Loading the Earth…</span>
+      </div>
+    </main>
+
+    <footer class="bottombar">
+      <div class="depth">
+        <label for="depth-slider" class="depth-end">Surface</label>
+        <div class="depth-track">
+          <input id="depth-slider" type="range" min="0" max="3" step="0.01" value="1" aria-valuetext="Magnetic" />
+          <div id="depth-stops" class="depth-stops" aria-hidden="true"></div>
+        </div>
+        <span class="depth-end">Mantle</span>
+      </div>
+      <div id="legend" class="legend" aria-label="Legend"></div>
+    </footer>
+    <div id="credits" class="credits"></div>
+
+    <dialog id="help-dialog" class="dialog" aria-labelledby="help-title">
+      <form method="dialog">
+        <button class="icon-button dialog-close" aria-label="Close">×</button>
+      </form>
+      <h2 id="help-title">About Beneath</h2>
+      <p>
+        Beneath is an explorable globe of what lies under the Earth's surface. Drag the <strong>depth slider</strong> to peel
+        back the surface, then click or tap anywhere to read what the data says about that point.
+      </p>
+      <p class="callout">
+        This site is educational. It is not an exploration, engineering or investment tool. Data resolution is kilometres, not
+        metres, and some datasets are decades old.
+      </p>
+      <h3>Keyboard</h3>
+      <ul class="keys">
+        <li><kbd>/</kbd> search</li>
+        <li><kbd>[</kbd> and <kbd>]</kbd> move the depth slider</li>
+        <li><kbd>Esc</kbd> close the card or dialog</li>
+      </ul>
+      <h3>Data and licences</h3>
+      <div id="sources-list"></div>
+    </dialog>
+
+    <dialog id="kp-dialog" class="dialog" aria-labelledby="kp-title">
+      <form method="dialog">
+        <button class="icon-button dialog-close" aria-label="Close">×</button>
+      </form>
+      <h2 id="kp-title">Survey conditions today</h2>
+      <div id="kp-body"></div>
+    </dialog>
+
+    <noscript>Beneath needs JavaScript and WebGL to draw the globe.</noscript>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

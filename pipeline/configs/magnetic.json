@@ -1,0 +1,20 @@
+{
+  "id": "magnetic",
+  "name": "Magnetic anomaly",
+  "kind": "raster-value",
+  "file": "magnetic.v1.pmtiles",
+  "units": "nT",
+  "scale": 1,
+  "minzoom": 0,
+  "maxzoom": 5,
+  "source": {
+    "url": "https://www.ngdc.noaa.gov/geomag/data/EMAG2/EMAG2_V3_20170530/EMAG2_V3_20170530_UpCont.tif",
+    "filename": "EMAG2_V3_20170530_UpCont.tif",
+    "licence": "Public domain (US Government)"
+  },
+  "attribution": "EMAG2v3, NOAA NCEI",
+  "licence": "Public domain (US Government)",
+  "sourceUrl": "https://www.ncei.noaa.gov/products/earth-magnetic-model-anomaly-grid-2",
+  "citation": "Meyer, B., Saltus, R., Chulliat, A. (2017). EMAG2: Earth Magnetic Anomaly Grid (2-arc-minute resolution) Version 3. NOAA National Centers for Environmental Information. doi:10.7289/V5H70CVX",
+  "description": "Total-field magnetic anomaly, EMAG2v3 grid upward-continued to 4 km above the geoid, 2 arc-minute. Bilinear-resampled to geographic (EPSG:4326) pixel centres at level 5, 2x2 means below."
+}

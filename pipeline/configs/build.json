@@ -1,0 +1,4 @@
+{
+  "generated": "2026-09-22",
+  "comment": "Fixed build date written to layers.json so rebuilds are byte-identical. Bump when sources are refreshed."
+}

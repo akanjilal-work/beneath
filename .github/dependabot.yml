@@ -1,0 +1,24 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /app
+    schedule:
+      interval: weekly
+    groups:
+      app:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /worker
+    schedule:
+      interval: weekly
+    groups:
+      worker:
+        patterns: ["*"]
+  - package-ecosystem: pip
+    directory: /pipeline
+    schedule:
+      interval: monthly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
