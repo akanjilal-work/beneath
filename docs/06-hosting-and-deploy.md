@@ -15,11 +15,11 @@ The plan put tiles on R2 from day one. For launch they ship inside the Pages art
 
 | File | Size |
 |---|---|
-| `magnetic.v1.pmtiles` (z0 to z6) | ~147 MB |
-| `gravity.v1.pmtiles` (z0 to z6) | ~222 MB |
+| `magnetic.v1.pmtiles` (geographic levels 0 to 5) | ~90 MB |
+| `gravity.v1.pmtiles` (geographic levels 0 to 5) | ~147 MB |
 | deposits, places, plates, coastlines JSON | ~17 MB |
 
-That is about 390 MB, inside the 1 GB Pages site limit. GitHub Pages honours HTTP `Range` requests, which PMTiles needs.
+That is about 250 MB, well inside the 1 GB Pages site limit. GitHub Pages honours HTTP `Range` requests, which PMTiles needs.
 
 Binary tiles never enter git history. They live as assets on a GitHub Release (`data-v1`), and the `Deploy app` workflow downloads that release into `dist/data/` before publishing.
 
