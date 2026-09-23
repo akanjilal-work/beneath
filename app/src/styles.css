@@ -517,6 +517,16 @@ details.why p {
   font-size: 13.5px;
   font-weight: 600;
 }
+.link-button {
+  justify-self: start;
+  border: 0;
+  background: none;
+  padding: 2px 0;
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
 .button.primary {
   background: var(--accent);
   color: var(--accent-ink);
@@ -683,6 +693,92 @@ details.why p {
 }
 .credits .cesium-credit-textContainer {
   display: inline;
+}
+
+/* --- surface view ------------------------------------------------------------------ */
+.surface-hud {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--topbar-h) + 8px);
+  transform: translateX(-50%);
+  z-index: 12;
+  width: min(560px, calc(100% - 32px));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 10px 14px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.hud-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.hud-agl {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  margin-right: auto;
+}
+.hud-help {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.hud-help kbd {
+  margin: 0 1px;
+}
+.hud-pad {
+  display: none;
+  grid-template-columns: repeat(3, 52px);
+  gap: 6px;
+  justify-content: center;
+  margin-top: 8px;
+}
+.hud-pad button {
+  height: 48px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 18px;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.hud-pad button:active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+@media (pointer: coarse) {
+  .hud-pad {
+    display: grid;
+  }
+  .hud-help {
+    display: none;
+  }
+}
+body.surface .layers-panel {
+  display: none;
+}
+@media (max-width: 760px) {
+  body.surface .legend {
+    display: none;
+  }
+  .surface-hud {
+    top: auto;
+    bottom: calc(118px + env(safe-area-inset-bottom));
+    z-index: 17;
+    padding: 8px 10px;
+  }
+  .hud-bar strong {
+    display: none;
+  }
+  .hud-bar .button {
+    height: 36px;
+    padding: 0 12px;
+  }
 }
 
 /* --- dialogs & loading -------------------------------------------------------------- */

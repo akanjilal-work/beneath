@@ -70,7 +70,15 @@ function chips(d: Deposit) {
   );
 }
 
-function depositItem(d: Deposit, distanceKm: number) {
+export interface CardActions {
+  onCopy: () => void;
+  /** Fly down to ground level at a point. */
+  onSurface: (lat: number, lon: number) => void;
+}
+
+function depositItem(d: Deposit, distanceKm: number, actions: CardActions) {
+  const visit = h("button", { class: "link-button", type: "button" }, "Visit site");
+  visit.addEventListener("click", () => actions.onSurface(d.lat, d.lon));
   return h(
     "li",
     null,
@@ -81,10 +89,11 @@ function depositItem(d: Deposit, distanceKm: number) {
       { class: "deposit-meta" },
       `${statusLabel(d.status)} · ${d.source.name}${d.source.legacy ? " (legacy data, not updated)" : ""}`,
     ),
+    visit,
   );
 }
 
-export function renderCard(f: PointFacts, onCopy: () => void) {
+export function renderCard(f: PointFacts, actions: CardActions) {
   const content = $("card-content");
   const headline = pickHeadline(f);
   const rows: HTMLElement[] = [];
@@ -110,16 +119,18 @@ export function renderCard(f: PointFacts, onCopy: () => void) {
       : f.deposits;
     depositsSection.push(
       list.length
-        ? h("ul", { class: "deposit-list" }, list.map((x) => depositItem(x.deposit, x.distanceKm)))
+        ? h("ul", { class: "deposit-list" }, list.map((x) => depositItem(x.deposit, x.distanceKm, actions)))
         : h("p", { class: "muted" }, "No recorded deposits nearby. Absence here often means no survey, not no minerals."),
     );
   }
 
-  const copyButton = h("button", { class: "button primary", type: "button" }, "Copy link to this point");
+  const surfaceButton = h("button", { class: "button primary", type: "button" }, "Go to the surface");
+  surfaceButton.addEventListener("click", () => actions.onSurface(f.lat, f.lon));
+  const copyButton = h("button", { class: "button", type: "button" }, "Copy link");
   copyButton.addEventListener("click", async () => {
-    onCopy();
+    actions.onCopy();
     copyButton.textContent = "Link copied";
-    setTimeout(() => (copyButton.textContent = "Copy link to this point"), 1600);
+    setTimeout(() => (copyButton.textContent = "Copy link"), 1600);
   });
 
   const parts: (HTMLElement | null)[] = [
@@ -131,7 +142,7 @@ export function renderCard(f: PointFacts, onCopy: () => void) {
     headline.why.length
       ? h("details", { class: "why" }, h("summary", null, "Why this matters"), headline.why.map((t) => h("p", null, t)))
       : null,
-    h("div", { class: "card-actions" }, copyButton),
+    h("div", { class: "card-actions" }, surfaceButton, copyButton),
   ];
   content.replaceChildren(...parts.filter((p): p is HTMLElement => p !== null));
 }

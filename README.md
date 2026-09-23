@@ -10,6 +10,7 @@ Think Earth Nullschool, but for the subsurface.
 
 - Drag the **depth slider** from Surface to Magnetic, Gravity and Plates. Adjacent layers cross-fade.
 - **Click or tap** anywhere for a plain-language card: magnetic (nT) and gravity (mGal) values at that point, the plate, the nearest boundary and its type, and deposits within 50 km.
+- **Go to the surface** from any card, or **Visit site** on a deposit, to fly down onto 3D terrain with satellite imagery. Drag to look around, move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> (or the on-screen pad), rise and descend with <kbd>E</kbd>/<kbd>Q</kbd>. The depth slider still drapes the data layers over the land.
 - **Search** a place or type `lat, lon`.
 - **Share** any view: the whole state lives in the URL.
 - Check **survey conditions today** from the live planetary K-index.

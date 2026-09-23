@@ -31,6 +31,9 @@ User's browser: decode tiles, colourise, render globe, answer click queries
 - **Globe:** CesiumJS, used without Cesium ion. Base imagery is self-hosted (for example NASA Blue Marble tiles) so no ion token is required.
 - **Tiling scheme:** geographic (EPSG:4326), matching Cesium's `GeographicTilingScheme`: level z has 2^(z+1) × 2^z tiles of 256 px. The plan started with Web Mercator, but Mercator tiles shrink towards the poles, so Cesium drew finer levels at high latitudes than at the equator in the same view and the data showed hard contrast bands. Geographic tiles fix that and cover the poles. In the PMTiles archive, geographic level z is stored at zoom z + 1 (`pmtilesZoomOffset` in `layers.json`), because PMTiles tile IDs assume square levels.
 - **State:** a single small store serialised to and from the URL hash.
+- **Terrain:** 3D elevation from the public Terrain Tiles on AWS (Terrarium PNG, Web Mercator, levels 0 to 15; about 30 m in most places, a few metres where lidar exists). Tiles are fetched and decoded in the same Web Worker pool and handed to Cesium's `CustomHeightmapTerrainProvider` as 65 × 65 heightmaps. Oceans are held at sea level because the source includes bathymetry.
+- **Imagery:** Sentinel-2 cloudless 2024 (EOX, 10 m) over the bundled Natural Earth II, which stays underneath as an instant fallback. Both sources are configurable (`VITE_IMAGERY_URL`, `VITE_TERRAIN_URL`).
+- **Surface view:** a drone-style camera that holds a set height above the terrain. Cesium's globe controls are switched off while it is active; dragging turns the view, keys or the on-screen pad move along the ground. Terrain depth testing is on only in this mode, so sea-level overlays do not show through hills. Deposits in view are lifted onto the sampled terrain height when the camera is low.
 
 ### Value-encoded raster tiles
 

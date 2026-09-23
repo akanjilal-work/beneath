@@ -97,6 +97,26 @@
         <div id="card-content"></div>
       </aside>
 
+      <section id="surface-hud" class="surface-hud" aria-label="Surface view controls" hidden>
+        <div class="hud-bar">
+          <strong>Surface view</strong>
+          <span id="surface-agl" class="hud-agl" aria-live="polite"></span>
+          <button id="surface-exit" class="button" type="button">Back to globe</button>
+        </div>
+        <p class="hud-help">
+          Drag to look around · <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows to move ·
+          <kbd>E</kbd>/<kbd>Q</kbd> or scroll to rise and descend · hold <kbd>Shift</kbd> to go faster · tap the ground for its card
+        </p>
+        <div class="hud-pad" role="group" aria-label="Move">
+          <button type="button" data-move="up" aria-label="Rise">⤒</button>
+          <button type="button" data-move="forward" aria-label="Move forward">▲</button>
+          <button type="button" data-move="down" aria-label="Descend">⤓</button>
+          <button type="button" data-move="left" aria-label="Move left">◀</button>
+          <button type="button" data-move="back" aria-label="Move back">▼</button>
+          <button type="button" data-move="right" aria-label="Move right">▶</button>
+        </div>
+      </section>
+
       <div id="loading" class="loading" role="status">
         <div class="loading-ring" aria-hidden="true"></div>
         <span>Loading the Earth…</span>
@@ -133,7 +153,8 @@
       <ul class="keys">
         <li><kbd>/</kbd> search</li>
         <li><kbd>[</kbd> and <kbd>]</kbd> move the depth slider</li>
-        <li><kbd>Esc</kbd> close the card or dialog</li>
+        <li><kbd>Esc</kbd> close the card or dialog, or leave surface view</li>
+        <li>In surface view: <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move, <kbd>E</kbd>/<kbd>Q</kbd> rise and descend, drag to look</li>
       </ul>
       <h3>Data and licences</h3>
       <div id="sources-list"></div>

@@ -5,6 +5,7 @@ import { Gazetteer, placeLabel, type PlacesFile } from "./data/gazetteer";
 import { fetchJson, findLayer, loadManifest, type Manifest, type RasterEntry } from "./data/manifest";
 import { PlateModel, type FeatureCollection } from "./data/plates";
 import { createGlobe, type Globe } from "./render/globe";
+import { createSurfaceView, type MoveAction } from "./render/surface";
 import { createValueLayer } from "./render/valueImagery";
 import { ValueSource } from "./render/valueSource";
 import { MAX_DEPTH, Store, parseHash, type AppState, type OverlayId } from "./state";
@@ -184,11 +185,55 @@ async function main() {
       picked,
       depthStop: nearestStop(store.state.depth),
     };
-    renderCard(facts, () => {
-      const url = store.shareUrl();
-      void navigator.clipboard?.writeText(url).catch(() => prompt("Copy this link", url));
+    renderCard(facts, {
+      onCopy: () => {
+        const url = store.shareUrl();
+        void navigator.clipboard?.writeText(url).catch(() => prompt("Copy this link", url));
+      },
+      onSurface: (lat, lon) => void goToSurface(lat, lon),
     });
   };
+
+  // --- surface view ------------------------------------------------------------------
+  const surface = createSurfaceView(globe.viewer);
+  const hud = $("surface-hud");
+  const agl = $("surface-agl");
+  let depthBeforeSurface: number | null = null;
+
+  const goToSurface = async (lat: number, lon: number) => {
+    autoRotate = false;
+    globe.setAutoRotate(false);
+    if (store.state.mode === "2d") store.set({ mode: "3d" });
+    // Start on plain imagery so the land itself is visible; the depth slider still works.
+    if (!surface.active) depthBeforeSurface = store.state.depth;
+    store.set({ depth: 0 });
+    if (window.matchMedia("(max-width: 760px)").matches) closeCard();
+    const ground = await globe.groundHeight(lat, lon);
+    surface.enter(lat, lon, ground);
+  };
+
+  surface.onChange((active) => {
+    document.body.classList.toggle("surface", active);
+    hud.hidden = !active;
+    if (!active && depthBeforeSurface !== null) {
+      store.set({ depth: depthBeforeSurface });
+      depthBeforeSurface = null;
+    }
+  });
+  surface.onHeight((h) => {
+    agl.textContent = h >= 1000 ? `${(h / 1000).toFixed(1)} km above ground` : `${Math.round(h)} m above ground`;
+  });
+  $("surface-exit").addEventListener("click", () => surface.exit());
+  hud.querySelectorAll<HTMLButtonElement>("[data-move]").forEach((b) => {
+    const action = b.dataset.move as MoveAction;
+    b.addEventListener("pointerdown", (e) => {
+      b.setPointerCapture(e.pointerId);
+      surface.press(action, true);
+    });
+    for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
+      b.addEventListener(type, () => surface.press(action, false));
+    }
+  });
 
   globe.onPick((lon, lat, deposit) => {
     void openCard(lat, lon, deposit);
@@ -226,6 +271,8 @@ async function main() {
       store.set({ depth: next });
     } else if (e.key === "Escape" && !card.hidden) {
       closeCard();
+    } else if (e.key === "Escape" && surface.active) {
+      surface.exit();
     }
   });
 

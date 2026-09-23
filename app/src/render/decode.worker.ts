@@ -24,10 +24,18 @@ export interface ColouriseRequest {
   shade: number;
 }
 
-export type WorkerRequest = DecodeRequest | ColouriseRequest;
+/** Fetch a Terrarium elevation tile and resample it to a size x size heightmap. */
+export interface TerrainRequest {
+  op: "terrain";
+  id: number;
+  url: string;
+  size: number;
+}
+
+export type WorkerRequest = DecodeRequest | ColouriseRequest | TerrainRequest;
 
 export type WorkerResponse =
-  | { id: number; ok: true; values?: Float32Array; bitmap?: ImageBitmap }
+  | { id: number; ok: true; values?: Float32Array | null; bitmap?: ImageBitmap }
   | { id: number; ok: false; error: string };
 
 const scope = self as unknown as DedicatedWorkerGlobalScope;
@@ -77,10 +85,51 @@ function colourise(req: ColouriseRequest): ImageData {
   return new ImageData(out, size, size);
 }
 
+/**
+ * Terrarium encoding: metres = R * 256 + G + B / 256 - 32768. The heightmap posts span the tile
+ * edge to edge (Cesium shares edge posts between neighbours), so post i sits at fraction i/(size-1)
+ * across the tile and is bilinearly sampled from the 256 px pixel centres.
+ */
+async function terrain(req: TerrainRequest): Promise<Float32Array | null> {
+  const res = await fetch(req.url);
+  if (!res.ok) return null;
+  const png = await decodePng(new Uint8Array(await res.arrayBuffer()));
+  const w = png.width;
+  const src = new Float32Array(w * png.height);
+  for (let i = 0, j = 0; i < src.length; i++, j += 3) {
+    src[i] = png.rgb[j] * 256 + png.rgb[j + 1] + png.rgb[j + 2] / 256 - 32768;
+  }
+  const n = req.size;
+  const out = new Float32Array(n * n);
+  for (let r = 0; r < n; r++) {
+    const fy = Math.min(png.height - 1, Math.max(0, (r / (n - 1)) * png.height - 0.5));
+    const y0 = Math.floor(fy);
+    const y1 = Math.min(png.height - 1, y0 + 1);
+    const ty = fy - y0;
+    for (let c = 0; c < n; c++) {
+      const fx = Math.min(w - 1, Math.max(0, (c / (n - 1)) * w - 0.5));
+      const x0 = Math.floor(fx);
+      const x1 = Math.min(w - 1, x0 + 1);
+      const tx = fx - x0;
+      const h =
+        (src[y0 * w + x0] * (1 - tx) + src[y0 * w + x1] * tx) * (1 - ty) +
+        (src[y1 * w + x0] * (1 - tx) + src[y1 * w + x1] * tx) * ty;
+      // The source includes bathymetry. Sea floor under an imagery-coloured sea looks wrong,
+      // so oceans are held at sea level (this also flattens the few land areas below it).
+      out[r * n + c] = Math.max(0, h);
+    }
+  }
+  return out;
+}
+
 scope.onmessage = async (event: MessageEvent<WorkerRequest>) => {
   const req = event.data;
   try {
-    if (req.op === "decode") {
+    if (req.op === "terrain") {
+      const values = await terrain(req);
+      const res: WorkerResponse = { id: req.id, ok: true, values };
+      scope.postMessage(res, values ? [values.buffer] : []);
+    } else if (req.op === "decode") {
       const png = await decodePng(new Uint8Array(req.bytes));
       const values = decodeValues(png.rgb, req.scale, req.offset);
       const res: WorkerResponse = { id: req.id, ok: true, values };

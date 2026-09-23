@@ -176,7 +176,28 @@ export function renderSources(manifest: Manifest) {
     h(
       "div",
       null,
-      h("strong", null, "Base imagery"),
+      h("strong", null, "Satellite imagery"),
+      h(
+        "span",
+        null,
+        "Sentinel-2 cloudless 2024 by EOX IT Services GmbH (contains modified Copernicus Sentinel data 2024) · CC BY-NC-SA 4.0",
+      ),
+    ),
+    h(
+      "div",
+      null,
+      h("strong", null, "Terrain"),
+      h(
+        "span",
+        null,
+        "Terrain Tiles on AWS (SRTM, GMTED2010, ETOPO1, 3DEP, Copernicus DEM and others) · ",
+        h("a", { href: "https://github.com/tilezen/joerd/blob/master/docs/attribution.md", target: "_blank", rel: "noopener" }, "full attribution"),
+      ),
+    ),
+    h(
+      "div",
+      null,
+      h("strong", null, "Base imagery (far view fallback)"),
       h("span", null, "Natural Earth II, shipped with CesiumJS · Public domain"),
     ),
   );

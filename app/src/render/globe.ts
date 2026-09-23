@@ -5,6 +5,7 @@ import {
   Cartographic,
   Color,
   ColorGeometryInstanceAttribute,
+  Credit,
   DistanceDisplayCondition,
   GeometryInstance,
   ImageryLayer,
@@ -20,12 +21,16 @@ import {
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
   TileMapServiceImageryProvider,
+  UrlTemplateImageryProvider,
   Viewer,
+  sampleTerrain,
   type PointPrimitive,
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
+import { IMAGERY_CREDIT, IMAGERY_MAX_LEVEL, IMAGERY_URL } from "../config";
 import type { Deposit } from "../data/deposits";
 import type { PlateModel } from "../data/plates";
+import { createTerrainProvider } from "./terrain";
 
 // No Cesium ion: base imagery is the Natural Earth II tiles shipped inside the Cesium package.
 Ion.defaultAccessToken = "";
@@ -51,6 +56,8 @@ export interface Globe {
   setMode(mode: "3d" | "2d"): void;
   setAutoRotate(on: boolean): void;
   setTheme(theme: "dark" | "light"): void;
+  /** Ground height in metres at a point, sampled from the terrain (0 if unavailable). */
+  groundHeight(lat: number, lon: number): Promise<number>;
 }
 
 /** Stable, distinct hue per plate (golden-ratio spacing). */
@@ -111,6 +118,7 @@ export async function createGlobe(container: HTMLElement, creditContainer: HTMLE
     infoBox: false,
     selectionIndicator: false,
     creditContainer,
+    terrainProvider: createTerrainProvider(),
     requestRenderMode: true,
     maximumRenderTimeChange: Infinity,
   });
@@ -118,12 +126,23 @@ export async function createGlobe(container: HTMLElement, creditContainer: HTMLE
   scene.globe.baseColor = Color.fromCssColorString("#0b1220");
   scene.globe.showGroundAtmosphere = true;
   scene.globe.enableLighting = false;
-  scene.fog.enabled = false;
-  // Ask for finer tiles than the default (2): the data layers are the point of the app,
-  // and with no terrain the extra tiles are cheap. Lower values sharpen further but slow
-  // the first load on phones.
+  // Fog hides distant terrain tiles near the horizon, which matters in the surface view.
+  scene.fog.enabled = true;
+  // Ask for finer tiles than the default (2): the data layers are the point of the app.
+  // Lower values sharpen further but slow the first load on phones.
   scene.globe.maximumScreenSpaceError = 1;
-  scene.screenSpaceCameraController.minimumZoomDistance = 20_000;
+  // Close enough to stand on the ground; Cesium's collision detection keeps the camera above terrain.
+  scene.screenSpaceCameraController.minimumZoomDistance = 30;
+
+  // Satellite imagery over the bundled Natural Earth base, which stays underneath as an
+  // instant, offline-safe fallback while tiles load.
+  viewer.imageryLayers.addImageryProvider(
+    new UrlTemplateImageryProvider({
+      url: IMAGERY_URL,
+      maximumLevel: IMAGERY_MAX_LEVEL,
+      credit: new Credit(IMAGERY_CREDIT, false),
+    }),
+  );
   scene.screenSpaceCameraController.maximumZoomDistance = 40_000_000;
   viewer.cesiumWidget.creditContainer.classList.add("cesium-credits");
 
@@ -135,6 +154,47 @@ export async function createGlobe(container: HTMLElement, creditContainer: HTMLE
   let plateLayer: ImageryLayer | null = null;
   let coastPrimitive: Primitive | null = null;
   const points = scene.primitives.add(new PointPrimitiveCollection()) as PointPrimitiveCollection;
+  let depositPoints: { deposit: Deposit; point: PointPrimitive }[] = [];
+  const lifted = new Set<number>();
+
+  /**
+   * Deposits are stored at sea level. Up close that buries them under hills, so when the camera
+   * is low, sample the terrain under the deposits in view and lift them onto the ground.
+   */
+  async function liftDepositsInView() {
+    if (!points.show || depositPoints.length === 0) return;
+    if (camera.positionCartographic.height > 400_000) return;
+    // Near the ground the view often includes sky, where Cesium cannot compute a view
+    // rectangle; fall back to a box around the camera.
+    const c = camera.positionCartographic;
+    const pad = CesiumMath.toRadians(0.35);
+    const rect = camera.computeViewRectangle() ?? {
+      west: c.longitude - pad,
+      east: c.longitude + pad,
+      south: c.latitude - pad,
+      north: c.latitude + pad,
+    };
+    const todo = depositPoints.filter(({ deposit: d }) => {
+      if (lifted.has(d.index)) return false;
+      const lon = CesiumMath.toRadians(d.lon);
+      const lat = CesiumMath.toRadians(d.lat);
+      const inLon = rect.west <= rect.east ? lon >= rect.west && lon <= rect.east : lon >= rect.west || lon <= rect.east;
+      return inLon && lat >= rect.south && lat <= rect.north;
+    });
+    const batch = todo.slice(0, 3000);
+    if (!batch.length) return;
+    batch.forEach(({ deposit }) => lifted.add(deposit.index));
+    const cartos = batch.map(({ deposit: d }) => Cartographic.fromDegrees(d.lon, d.lat));
+    try {
+      await sampleTerrain(viewer.terrainProvider, 12, cartos);
+    } catch {
+      return;
+    }
+    batch.forEach(({ deposit: d, point }, i) => {
+      point.position = Cartesian3.fromDegrees(d.lon, d.lat, (cartos[i].height || 0) + 6);
+    });
+    scene.requestRender();
+  }
   const pickMarker = scene.primitives.add(new PointPrimitiveCollection()) as PointPrimitiveCollection;
 
   function lineInstances(lines: number[][][], colour: (i: number) => Color, width: number, ids?: unknown[]) {
@@ -194,7 +254,9 @@ export async function createGlobe(container: HTMLElement, creditContainer: HTMLE
       lon = deposit.lon;
       lat = deposit.lat;
     } else {
-      const cart = camera.pickEllipsoid(e.position, scene.globe.ellipsoid);
+      // Pick the terrain surface, not the ellipsoid, so tilted and ground-level views are exact.
+      const ray = camera.getPickRay(e.position);
+      const cart = (ray && scene.globe.pick(ray, scene)) ?? camera.pickEllipsoid(e.position, scene.globe.ellipsoid);
       if (!cart) return;
       const c = Cartographic.fromCartesian(cart);
       lon = CesiumMath.toDegrees(c.longitude);
@@ -220,6 +282,7 @@ export async function createGlobe(container: HTMLElement, creditContainer: HTMLE
     const lat = CesiumMath.toDegrees(c.latitude);
     const lon = CesiumMath.toDegrees(c.longitude);
     idleListeners.forEach((fn) => fn(lat, lon, c.height));
+    void liftDepositsInView();
   });
 
   // --- auto rotate ---------------------------------------------------------------------
@@ -289,9 +352,11 @@ export async function createGlobe(container: HTMLElement, creditContainer: HTMLE
 
     setDeposits(deposits) {
       points.removeAll();
+      depositPoints = [];
+      lifted.clear();
       for (const d of deposits) {
         const size = STATUS_SIZE[d.statusIndex] ?? 4;
-        points.add({
+        const point = points.add({
           position: Cartesian3.fromDegrees(d.lon, d.lat),
           color: Color.fromCssColorString(d.group.colour),
           pixelSize: size,
@@ -301,11 +366,13 @@ export async function createGlobe(container: HTMLElement, creditContainer: HTMLE
           distanceDisplayCondition: new DistanceDisplayCondition(0, depositMaxDistance(d)),
           id: d,
         });
+        depositPoints.push({ deposit: d, point });
       }
       scene.requestRender();
     },
     setDepositsVisible(show) {
       points.show = show;
+      if (show) void liftDepositsInView();
       scene.requestRender();
     },
 
@@ -327,8 +394,9 @@ export async function createGlobe(container: HTMLElement, creditContainer: HTMLE
 
     setPickMarker(lat, lon) {
       pickMarker.removeAll();
+      const ground = scene.globe.getHeight(Cartographic.fromDegrees(lon, lat)) ?? 0;
       pickMarker.add({
-        position: Cartesian3.fromDegrees(lon, lat),
+        position: Cartesian3.fromDegrees(lon, lat, ground + 2),
         pixelSize: 12,
         color: Color.TRANSPARENT,
         outlineColor: Color.WHITE,
@@ -352,6 +420,15 @@ export async function createGlobe(container: HTMLElement, creditContainer: HTMLE
       rotating = on;
       lastTick = performance.now();
       scene.requestRender();
+    },
+    async groundHeight(lat, lon) {
+      const carto = Cartographic.fromDegrees(lon, lat);
+      try {
+        await sampleTerrain(viewer.terrainProvider, 13, [carto]);
+      } catch {
+        return scene.globe.getHeight(carto) ?? 0;
+      }
+      return carto.height || 0;
     },
     setTheme(theme) {
       scene.backgroundColor = Color.fromCssColorString(theme === "dark" ? "#05080f" : "#dfe6ee");
