@@ -27,7 +27,6 @@ import json
 from urllib.parse import urlencode
 
 from ..config import load_config
-from ..fetch import fetch
 from ..manifest import vector_layer_entry, write_layer_entry
 from ..paths import OUT_DIR
 
@@ -85,6 +84,9 @@ def compact(rows: list[dict], named_from: float) -> dict:
 
 
 def build() -> dict:
+    # Imported here so the parsing functions above can be tested without the network stack.
+    from ..fetch import fetch
+
     cfg = load_config("earthquakes")
     q = cfg["query"]
     rows: list[dict] = []
