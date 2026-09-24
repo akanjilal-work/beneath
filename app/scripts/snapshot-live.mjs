@@ -1,7 +1,8 @@
 // Daily snapshot of slow-changing live sources, run by the deploy workflow (and on a schedule):
 //   satellites.json  orbital elements for active satellites (CelesTrak), propagated in the browser
 //   webcams.json     public traffic camera locations and image links (Caltrans, 511NY, and
-//                    Ontario 511 when ONTARIO_511_KEY is set; the key never leaves the build)
+//                    Ontario 511 when ONTARIO_511_KEY is set), plus Windy's most popular
+//                    webcams worldwide when WINDY_API_KEY is set; keys never leave the build
 // CelesTrak does not allow cross-origin reads, and camera lists change rarely, so a daily copy
 // next to the app is enough; the positions and camera images themselves are live in the browser.
 //
@@ -54,6 +55,7 @@ const SOURCES = [
   { id: "caltrans", name: "Caltrans (California)", url: "https://cwwp2.dot.ca.gov/", updateMinutes: 5 },
   { id: "511ny", name: "511NY (New York State)", url: "https://511ny.org/", updateMinutes: 2 },
   { id: "511on", name: "Ontario 511", url: "https://511on.ca/", updateMinutes: 5 },
+  { id: "windy", name: "Webcams provided by windy.com", url: "https://www.windy.com/webcams", updateMinutes: 10 },
 ];
 
 async function caltrans() {
@@ -98,17 +100,52 @@ async function ontario() {
   return cams;
 }
 
+// Windy's 1,000 most popular webcams worldwide (the free tier pages through at most 1,000), so the
+// wide view has cameras everywhere; the app adds more near the view through the Worker.
+async function windyPopular() {
+  const key = process.env.WINDY_API_KEY;
+  if (!key) throw new Error("WINDY_API_KEY not set");
+  const pages = await Promise.all(
+    Array.from({ length: 20 }, async (_, i) => {
+      const params = new URLSearchParams({ sortKey: "popularity", sortDirection: "desc", limit: "50", offset: String(i * 50), include: "location,images,urls" });
+      const res = await fetch(`https://api.windy.com/webcams/api/v3/webcams?${params}`, {
+        headers: { ...UA, "x-windy-api-key": key },
+        signal: AbortSignal.timeout(60_000),
+      });
+      return res.ok ? (await res.json()).webcams ?? [] : [];
+    }),
+  );
+  const seen = new Set();
+  const cams = [];
+  for (const c of pages.flat()) {
+    const lat = c.location?.latitude;
+    const lon = c.location?.longitude;
+    const image = c.images?.current?.preview;
+    if (c.status !== "active" || seen.has(c.webcamId) || !Number.isFinite(lat) || !Number.isFinite(lon) || !image) continue;
+    seen.add(c.webcamId);
+    cams.push([round(lon), round(lat), c.title ?? "Webcam", image, 3, c.urls?.detail ?? `https://windy.com/webcams/${c.webcamId}`]);
+  }
+  return cams;
+}
+
 const round = (v) => Math.round(v * 1e5) / 1e5;
 
 async function webcams() {
-  const parts = await Promise.allSettled([caltrans(), ny(), ontario()]);
+  const parts = await Promise.allSettled([caltrans(), ny(), ontario(), windyPopular()]);
   const cams = [];
+  // Windy republishes many traffic cameras; keep the agency's copy (about 100 m tolerance).
+  const spot = (c) => `${Math.round(c[0] * 1000)},${Math.round(c[1] * 1000)}`;
+  const traffic = new Set();
   parts.forEach((p, i) => {
-    if (p.status === "fulfilled") cams.push(...p.value);
-    else console.warn(`[live] ${SOURCES[i].id} skipped: ${p.reason?.message ?? p.reason}`);
+    if (p.status !== "fulfilled") return console.warn(`[live] ${SOURCES[i].id} skipped: ${p.reason?.message ?? p.reason}`);
+    for (const c of p.value) {
+      if (SOURCES[i].id === "windy" && traffic.has(spot(c))) continue;
+      if (SOURCES[i].id !== "windy") traffic.add(spot(c));
+      cams.push(c);
+    }
   });
   if (!cams.length) throw new Error("no cameras from any source");
-  const doc = { updated: now, fields: ["lon", "lat", "name", "image", "source"], sources: SOURCES, cams };
+  const doc = { updated: now, fields: ["lon", "lat", "name", "image", "source", "link"], sources: SOURCES, cams };
   writeFileSync(join(out, "webcams.json"), JSON.stringify(doc));
   console.log(`[live] webcams: ${cams.length}`);
 }

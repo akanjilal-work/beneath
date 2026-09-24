@@ -185,7 +185,8 @@ async function main() {
       (f) => {
         const cams = webcamsFromFile(f);
         camLayer.setWebcams(cams);
-        liveLegend.webcams = { count: cams.length, sources: f.sources, nearby: 0 };
+        const windy = cams.filter((c) => c.source.id === "windy").length;
+        liveLegend.webcams = { count: cams.length - windy, windy, sources: f.sources.filter((x) => x.id !== "windy"), nearby: 0 };
         legend();
       },
       (err) => {

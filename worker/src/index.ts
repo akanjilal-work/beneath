@@ -3,7 +3,7 @@
 // so the app can read it either from the R2 custom domain or from this Worker's URL.
 // It also proxies live aircraft (/aircraft), which the free ADS-B feeds do not serve to browsers.
 
-import { AIRCRAFT_UPSTREAMS, aircraftQuery, normaliseAircraft } from "./aircraft";
+import { AIRCRAFT_UPSTREAMS, GLOBAL_AIRCRAFT_KEY, OPENSKY_ALL, aircraftQuery, normaliseAircraft, normaliseOpenSky } from "./aircraft";
 import { normaliseKp, SWPC_KP_URL } from "./kp";
 import { WINDY_PAGES, normaliseWebcams, webcamQuery, windyPageUrl } from "./webcams";
 
@@ -30,6 +30,20 @@ async function refresh(env: Env): Promise<string> {
   return file.points[file.points.length - 1].time;
 }
 
+/** Every aircraft OpenSky tracks, stored in R2 for the app's worldwide overview. */
+async function refreshGlobalAircraft(env: Env): Promise<number> {
+  const res = await fetch(OPENSKY_ALL, {
+    headers: { "User-Agent": "beneath-live-feed (+https://github.com/akanjilal-work/beneath)" },
+  });
+  if (!res.ok) throw new Error(`OpenSky returned ${res.status}`);
+  const file = normaliseOpenSky(await res.json(), Date.now() / 1000);
+  if (file.aircraft.length < 1000) throw new Error(`only ${file.aircraft.length} aircraft; keeping the previous file`);
+  await env.DATA.put(GLOBAL_AIRCRAFT_KEY, JSON.stringify(file), {
+    httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=300" },
+  });
+  return file.aircraft.length;
+}
+
 function corsHeaders(env: Env, origin: string | null): Record<string, string> {
   const allowed = (env.ALLOWED_ORIGINS || "*").split(",").map((s) => s.trim());
   const allow = allowed.includes("*") ? "*" : origin && allowed.includes(origin) ? origin : "";
@@ -47,6 +61,12 @@ export default {
         (err) => console.error(`kp refresh failed: ${err}`),
       ),
     );
+    ctx.waitUntil(
+      refreshGlobalAircraft(env).then(
+        (n) => console.log(`global aircraft refreshed: ${n}`),
+        (err) => console.error(`global aircraft refresh failed: ${err}`),
+      ),
+    );
   },
 
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -58,11 +78,19 @@ export default {
     }
 
     if (url.pathname === "/" || url.pathname === "/health") {
-      const head = await env.DATA.head(KP_KEY);
+      const [head, planes] = await Promise.all([env.DATA.head(KP_KEY), env.DATA.head(GLOBAL_AIRCRAFT_KEY)]);
       return Response.json(
-        { ok: true, kpUpdated: head?.uploaded.toISOString() ?? null },
+        { ok: true, kpUpdated: head?.uploaded.toISOString() ?? null, globalAircraftUpdated: planes?.uploaded.toISOString() ?? null },
         { headers: { ...cors, "Cache-Control": "no-store" } },
       );
+    }
+
+    if (url.pathname === "/aircraft/global") {
+      const obj = await env.DATA.get(GLOBAL_AIRCRAFT_KEY);
+      if (!obj) return new Response("Not yet available", { status: 404, headers: cors });
+      return new Response(obj.body, {
+        headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "public, max-age=300", ETag: obj.httpEtag },
+      });
     }
 
     if (url.pathname === "/aircraft") {

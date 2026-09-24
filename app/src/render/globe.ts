@@ -132,7 +132,9 @@ function depositMaxDistance(d: Deposit): number {
 export async function createGlobe(container: HTMLElement, creditContainer: HTMLElement): Promise<Globe> {
   const baseProvider = await TileMapServiceImageryProvider.fromUrl(buildModuleUrl("Assets/Textures/NaturalEarthII"));
   const viewer = new Viewer(container, {
-    baseLayer: new ImageryLayer(baseProvider),
+    // Darkened to match Sentinel-2's oceans: it shows alone only around the poles (beyond the
+    // 85 degree reach of the Mercator imagery) and while tiles load.
+    baseLayer: new ImageryLayer(baseProvider, { brightness: 0.62, contrast: 1.1, saturation: 0.85 }),
     baseLayerPicker: false,
     geocoder: false,
     homeButton: false,

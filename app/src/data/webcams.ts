@@ -13,7 +13,8 @@ export interface WebcamsFile {
   updated: string;
   fields: string[];
   sources: WebcamSource[];
-  cams: [number, number, string, string, number][];
+  /** lon, lat, name, image, source index, and an optional page link (Windy cameras). */
+  cams: [number, number, string, string, number, string?][];
 }
 
 export interface Webcam {
@@ -45,7 +46,7 @@ export function windyCamsFromFile(file: WindyFile, firstIndex: number): Webcam[]
 export function webcamsFromFile(file: WebcamsFile): Webcam[] {
   return file.cams
     .filter(([lon, lat, , image]) => Number.isFinite(lon) && Number.isFinite(lat) && /^https:\/\//.test(image))
-    .map(([lon, lat, name, image, s], index) => ({ kind: "webcam", index, lon, lat, name, image, source: file.sources[s] }));
+    .map(([lon, lat, name, image, s, link], index) => ({ kind: "webcam", index, lon, lat, name, image, source: file.sources[s], link }));
 }
 
 /** The camera image with a cache-busting parameter, so each refresh fetches the latest frame. */

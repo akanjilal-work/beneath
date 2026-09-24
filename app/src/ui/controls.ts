@@ -35,7 +35,7 @@ const OVERLAY_LABELS: Record<OverlayId, { label: string; hint: string }> = {
 export interface LiveLegend {
   satellites: { count: number; updated: string } | null;
   aircraft: AircraftStatus;
-  webcams: { count: number; sources: WebcamSource[]; nearby: number } | null;
+  webcams: { count: number; windy: number; sources: WebcamSource[]; nearby: number } | null;
 }
 
 export function setupControls(store: Store, available: Set<OverlayId>) {
@@ -211,14 +211,26 @@ export function renderLegend(
   if (s.overlays.has("aircraft") && live.aircraft.state !== "off") {
     const a = live.aircraft;
     const status =
-      a.state === "ok" ? `${a.count} in view` : a.state === "zoom" ? "zoom in closer" : a.state === "error" ? "feed unavailable" : "";
+      a.state === "ok"
+        ? `${a.count} live in view`
+        : a.state === "overview"
+          ? `${a.count.toLocaleString()} worldwide`
+          : a.state === "error"
+            ? "feed unavailable"
+            : "";
     items.push(
       h(
         "div",
         { class: "legend-item" },
         h("div", { class: "legend-title" }, h("span", null, "Aircraft"), h("span", null, status)),
         h("div", { class: "legend-keys" }, h("span", null, h("i", { style: "background:#ffd166" }), "Flying"), h("span", null, h("i", { style: "background:#9aa6bd" }), "On the ground")),
-        h("div", { class: "legend-source" }, `${a.state === "ok" ? a.source : "adsb.lol / adsb.fi"} community receivers · refreshed every 10 s`),
+        h(
+          "div",
+          { class: "legend-source" },
+          a.state === "overview"
+            ? `OpenSky Network overview from ${new Date(a.updated).toISOString().slice(11, 16)} UTC, refreshed every 15 min · zoom in for live positions`
+            : `${a.state === "ok" ? a.source : "adsb.lol / adsb.fi"} community receivers · refreshed every 10 s`,
+        ),
       ),
     );
   }
@@ -227,12 +239,12 @@ export function renderLegend(
       h(
         "div",
         { class: "legend-item" },
-        h("div", { class: "legend-title" }, h("span", null, "Cameras"), h("span", null, "zoom in to see them")),
+        h("div", { class: "legend-title" }, h("span", null, "Cameras"), h("span", null, "zoom in for more")),
         h(
           "div",
           { class: "legend-keys" },
           h("span", null, h("i", { style: "background:#34d399" }), `Traffic (${live.webcams.count.toLocaleString()})`),
-          h("span", null, h("i", { style: "background:#60a5fa" }), live.webcams.nearby ? `Webcams near view (${live.webcams.nearby})` : "Webcams near view"),
+          h("span", null, h("i", { style: "background:#60a5fa" }), `Webcams (${(live.webcams.windy + live.webcams.nearby).toLocaleString()})`),
         ),
         h(
           "div",
@@ -269,7 +281,11 @@ export function renderSources(manifest: Manifest) {
       "div",
       null,
       h("strong", null, "Aircraft"),
-      h("span", null, "adsb.lol (Open Database License 1.0), with adsb.fi open data as a fallback · community ADS-B receivers"),
+      h(
+        "span",
+        null,
+        "Live: adsb.lol (Open Database License 1.0), with adsb.fi open data as a fallback. Worldwide overview: OpenSky Network, refreshed every 15 minutes. Community ADS-B receivers.",
+      ),
     ),
     h(
       "div",

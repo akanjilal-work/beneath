@@ -46,3 +46,25 @@ describe("aircraft sources", () => {
     expect(file.aircraft.length).toBe(1);
   });
 });
+
+describe("OpenSky overview", () => {
+  it("converts state vectors: metres to metres, m/s to knots, ground to 0", async () => {
+    const { normaliseOpenSky } = await import("./aircraft");
+    const file = normaliseOpenSky(
+      {
+        time: 1_790_000_000,
+        states: [
+          ["c07e33", "ACA101  ", "Canada", 0, 0, -79.62811, 43.68801, 10668, false, 231.5, 91.4, 0, null, 10972.8, "1000", false, 0],
+          ["c01234", "WJA22   ", "Canada", 0, 0, -79.6, 43.6, null, true, 5, 180, 0, null, null, null, false, 0],
+          ["nopos", "X", "Canada", 0, 0, null, null, 1000, false, 100, 0, 0, null, 1000, null, false, 0],
+        ],
+      },
+      0,
+    );
+    expect(file.time).toBe(1_790_000_000);
+    expect(file.aircraft).toEqual([
+      ["c07e33", "ACA101", -79.628, 43.688, 10973, 450, 91, null, null],
+      ["c01234", "WJA22", -79.6, 43.6, 0, 10, 180, null, null],
+    ]);
+  });
+});

@@ -1,11 +1,11 @@
-import { Cartesian3, Color, DistanceDisplayCondition, NearFarScalar, PointPrimitiveCollection, type Scene } from "cesium";
+import { Cartesian3, Color, NearFarScalar, PointPrimitiveCollection, type Scene } from "cesium";
 import { LIVE_PROXY_URL } from "../config";
 import { windyCamsFromFile, type Webcam, type WindyFile } from "../data/webcams";
 
-/** Cameras appear once the view is regional; thousands of dots from space would be noise. */
+/** Below this camera height, extra webcams near the view are loaded from Windy through the Worker. */
 export const WEBCAM_MAX_VIEW_M = 1_200_000;
-const SHOW = new DistanceDisplayCondition(0, WEBCAM_MAX_VIEW_M);
-const SCALE = new NearFarScalar(2e4, 1.5, 1.2e6, 0.8);
+// Visible at every height, shrinking from space so clusters read as coverage rather than noise.
+const SCALE = new NearFarScalar(2e4, 1.5, 2e7, 0.4);
 
 const TRAFFIC = Color.fromCssColorString("#34d399");
 const WINDY = Color.fromCssColorString("#60a5fa");
@@ -41,7 +41,6 @@ export class WebcamLayer {
       outlineColor: Color.WHITE,
       outlineWidth: 1.5,
       scaleByDistance: SCALE,
-      distanceDisplayCondition: SHOW,
       id: cam,
     });
   }
@@ -72,7 +71,7 @@ export class WebcamLayer {
   setWebcams(cams: Webcam[]) {
     this.points.removeAll();
     this.known = new Set(cams.map((c) => spot(c.lon, c.lat)));
-    for (const cam of cams) this.addTo(this.points, cam, TRAFFIC);
+    for (const cam of cams) this.addTo(this.points, cam, cam.source.id === "windy" ? WINDY : TRAFFIC);
     this.scene.requestRender();
   }
 

@@ -34,7 +34,24 @@ export interface TerrainRequest {
   seaFloor?: boolean;
 }
 
-export type WorkerRequest = DecodeRequest | ColouriseRequest | TerrainRequest;
+/**
+ * Build a heightmap for a geographic (lat/lon) tile by sampling Terrarium tiles, which are Web
+ * Mercator. A geographic grid covers the poles, where Mercator tiles stop at 85.05 degrees, so the
+ * globe has no holes there; posts beyond that latitude take the height of the last Mercator row.
+ */
+export interface TerrainGeoRequest {
+  op: "terrainGeo";
+  id: number;
+  /** Tile URL template with {z}, {x}, {y}. */
+  template: string;
+  /** Mercator level to sample. */
+  level: number;
+  /** Degrees: west, south, east, north. */
+  bounds: [number, number, number, number];
+  size: number;
+}
+
+export type WorkerRequest = DecodeRequest | ColouriseRequest | TerrainRequest | TerrainGeoRequest;
 
 export type WorkerResponse =
   | { id: number; ok: true; values?: Float32Array | null; bitmap?: ImageBitmap }
@@ -124,10 +141,93 @@ async function terrain(req: TerrainRequest): Promise<Float32Array | null> {
   return out;
 }
 
+// Decoded Mercator tiles, shared by neighbouring geographic tiles (each worker keeps its own).
+const mercCache = new Map<string, Promise<{ values: Float32Array; width: number } | null>>();
+const MERC_CACHE = 96;
+const MAX_LAT = 85.05112878;
+
+function mercTile(template: string, z: number, x: number, y: number) {
+  const key = `${z}/${x}/${y}`;
+  let p = mercCache.get(key);
+  if (!p) {
+    const url = template.replace("{z}", String(z)).replace("{x}", String(x)).replace("{y}", String(y));
+    p = fetch(url)
+      .then(async (res) => {
+        if (!res.ok) return null;
+        const png = await decodePng(new Uint8Array(await res.arrayBuffer()));
+        const values = new Float32Array(png.width * png.height);
+        for (let i = 0, j = 0; i < values.length; i++, j += 3) {
+          values[i] = png.rgb[j] * 256 + png.rgb[j + 1] + png.rgb[j + 2] / 256 - 32768;
+        }
+        return { values, width: png.width };
+      })
+      .catch(() => null);
+    mercCache.set(key, p);
+    while (mercCache.size > MERC_CACHE) mercCache.delete(mercCache.keys().next().value as string);
+  }
+  return p;
+}
+
+async function terrainGeo(req: TerrainGeoRequest): Promise<Float32Array> {
+  const [west, south, east, north] = req.bounds;
+  const n = req.size;
+  const z = req.level;
+  const tiles = 2 ** z;
+  // Where each post falls in the Mercator pyramid (global pixel coordinates at this level).
+  const gx = new Float64Array(n * n);
+  const gy = new Float64Array(n * n);
+  const needed = new Set<string>();
+  for (let r = 0; r < n; r++) {
+    const lat = Math.max(-MAX_LAT, Math.min(MAX_LAT, north - (r / (n - 1)) * (north - south)));
+    const s = Math.sin((lat * Math.PI) / 180);
+    const yf = (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * tiles;
+    for (let c = 0; c < n; c++) {
+      const lon = west + (c / (n - 1)) * (east - west);
+      const xf = (((lon + 180) / 360) % 1 + 1) % 1 * tiles;
+      const i = r * n + c;
+      gx[i] = Math.min(tiles - 1e-9, xf);
+      gy[i] = Math.min(tiles - 1e-9, Math.max(0, yf));
+      needed.add(`${Math.floor(gx[i])}/${Math.floor(gy[i])}`);
+    }
+  }
+  const loaded = new Map<string, { values: Float32Array; width: number } | null>();
+  await Promise.all(
+    [...needed].map(async (k) => {
+      const [x, y] = k.split("/").map(Number);
+      loaded.set(k, await mercTile(req.template, z, x, y));
+    }),
+  );
+  const out = new Float32Array(n * n);
+  for (let i = 0; i < n * n; i++) {
+    const tx = Math.floor(gx[i]);
+    const ty = Math.floor(gy[i]);
+    const t = loaded.get(`${tx}/${ty}`);
+    if (!t) continue;
+    const w = t.width;
+    const px = Math.min(w - 1, Math.max(0, (gx[i] - tx) * w - 0.5));
+    const py = Math.min(w - 1, Math.max(0, (gy[i] - ty) * w - 0.5));
+    const x0 = Math.floor(px);
+    const y0 = Math.floor(py);
+    const x1 = Math.min(w - 1, x0 + 1);
+    const y1 = Math.min(w - 1, y0 + 1);
+    const fx = px - x0;
+    const fy = py - y0;
+    const v = t.values;
+    const h = (v[y0 * w + x0] * (1 - fx) + v[y0 * w + x1] * fx) * (1 - fy) + (v[y1 * w + x0] * (1 - fx) + v[y1 * w + x1] * fx) * fy;
+    // Oceans are held at sea level, as in the Mercator terrain.
+    out[i] = Math.max(0, h);
+  }
+  return out;
+}
+
 scope.onmessage = async (event: MessageEvent<WorkerRequest>) => {
   const req = event.data;
   try {
-    if (req.op === "terrain") {
+    if (req.op === "terrainGeo") {
+      const values = await terrainGeo(req);
+      const res: WorkerResponse = { id: req.id, ok: true, values };
+      scope.postMessage(res, [values.buffer]);
+    } else if (req.op === "terrain") {
       const values = await terrain(req);
       const res: WorkerResponse = { id: req.id, ok: true, values };
       scope.postMessage(res, values ? [values.buffer] : []);

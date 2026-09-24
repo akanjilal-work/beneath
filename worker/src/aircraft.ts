@@ -83,3 +83,44 @@ export function normaliseAircraft(
     aircraft: rows,
   };
 }
+
+// --- worldwide overview ---------------------------------------------------------------------
+// OpenSky returns every aircraft it tracks in one call. Anonymous access allows roughly one global
+// call every 15 minutes, so the Worker's cron fetches it and stores the result in R2; the app
+// reads that copy when the view is too wide for the live point queries.
+
+export const OPENSKY_ALL = "https://opensky-network.org/api/states/all";
+export const GLOBAL_AIRCRAFT_KEY = "live/aircraft-global.json";
+
+/**
+ * OpenSky state vectors: [icao24, callsign, country, timePosition, lastContact, lon, lat,
+ * baroAltitude m, onGround, velocity m/s, trueTrack deg, verticalRate, sensors, geoAltitude m, ...].
+ */
+export function normaliseOpenSky(body: { time?: number; states?: unknown[][] | null }, nowSeconds: number): AircraftFile {
+  const rows = (body.states ?? []).flatMap((s) => {
+    const lon = num(s[5]);
+    const lat = num(s[6]);
+    if (lon === null || lat === null) return [];
+    const onGround = s[8] === true;
+    const alt = onGround ? 0 : (num(s[13]) ?? num(s[7]));
+    const speed = num(s[9]);
+    return [[
+      str(s[0]),
+      str(s[1]),
+      round(lon, 3),
+      round(lat, 3),
+      alt === null ? null : Math.round(alt),
+      speed === null ? null : Math.round(speed * 1.943844),
+      num(s[10]) === null ? null : Math.round(num(s[10])!),
+      null,
+      null,
+    ]];
+  });
+  return {
+    time: num(body.time) ?? nowSeconds,
+    source: "OpenSky Network",
+    licence: "OpenSky Network data, free for non-commercial use with attribution",
+    fields: AIRCRAFT_FIELDS,
+    aircraft: rows,
+  };
+}

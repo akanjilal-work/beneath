@@ -6,6 +6,8 @@ It also proxies **live aircraft** at `/aircraft?lat=..&lon=..&r=..` (radius in n
 
 It also serves **webcams near a point** at `/webcams?lat=..&lon=..&r=..` (radius in km, up to 250) from the Windy Webcams API. The Windy key is a Worker secret (`WINDY_API_KEY`), set by the deploy workflow from the repository secret of the same name, so it never reaches the browser. Results are cached for 10 minutes per area.
 
+The 15-minute cron also fetches **every aircraft** from the OpenSky Network (`states/all`, the anonymous limit allows about one global call every 15 minutes) and stores it in R2 as `live/aircraft-global.json`, served at `/aircraft/global`. The app shows this worldwide overview when zoomed out and switches to live `/aircraft` queries up close. `/health` reports when the Kp and aircraft files were last written.
+
 The Worker is **optional**. NOAA's feed allows cross-origin requests, so the app reads it directly unless `VITE_LIVE_KP_URL` points at this Worker or the R2 copy. Deploying the Worker adds schema validation and insulates the app from NOAA format changes (a bad poll keeps the last good file, and the app marks old data as stale).
 
 ## Output

@@ -4,9 +4,15 @@ import { advance, aircraftFromFile, type Aircraft, type AircraftFile } from "../
 
 export const aircraftAvailable = Boolean(LIVE_PROXY_URL);
 
-/** Above this camera height there are too many aircraft to draw usefully; the legend says zoom in. */
+/**
+ * Below this camera height aircraft are live (polled every 10 s for the area in view). Above it the
+ * layer shows a worldwide overview that the Worker refreshes every 15 minutes.
+ */
 export const AIRCRAFT_MAX_VIEW_M = 1_500_000;
+const OVERVIEW_POLL_MS = 5 * 60_000;
 const POLL_MS = 10_000;
+// Full size up close, small enough from space that 12,000 planes read as traffic, not clutter.
+const FAR_SCALE = new NearFarScalar(2e4, 1.4, 2e7, 0.3);
 const MOVE_MS = 1_000;
 
 // A plane pointing up (north); billboards rotate it to the aircraft's track.
@@ -25,7 +31,19 @@ async function fetchAircraft(lat: number, lon: number, radiusNm: number): Promis
   return { planes: aircraftFromFile(file), source: file.source };
 }
 
-export type AircraftStatus = { state: "off" } | { state: "zoom" } | { state: "ok"; count: number; source: string } | { state: "error" };
+export type AircraftStatus =
+  | { state: "off" }
+  | { state: "ok"; count: number; source: string }
+  | { state: "overview"; count: number; updated: number }
+  | { state: "error" };
+
+async function fetchOverview(): Promise<{ planes: Aircraft[]; time: number }> {
+  const url = new URL("aircraft/global", LIVE_PROXY_URL.endsWith("/") ? LIVE_PROXY_URL : `${LIVE_PROXY_URL}/`);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Aircraft overview returned ${res.status}`);
+  const file = (await res.json()) as AircraftFile;
+  return { planes: aircraftFromFile(file), time: file.time * 1000 };
+}
 
 /**
  * Live aircraft around the view. Polls the Worker every 10 seconds while the camera is low enough,
@@ -39,6 +57,7 @@ export class AircraftLayer {
   private moveTimer = 0;
   private view: () => { lat: number; lon: number; heightM: number };
   private statusListener: (s: AircraftStatus) => void = () => {};
+  private overview: { planes: Aircraft[]; time: number; fetched: number } | null = null;
 
   constructor(scene: Scene, view: () => { lat: number; lon: number; heightM: number }) {
     this.scene = scene;
@@ -77,16 +96,22 @@ export class AircraftLayer {
 
   private async poll() {
     const v = this.view();
-    if (v.heightM > AIRCRAFT_MAX_VIEW_M) {
-      this.clear();
-      this.statusListener({ state: "zoom" });
-      return;
-    }
-    const radiusNm = Math.min(250, Math.max(30, (v.heightM / 1000) * 0.9 / 1.852));
     let planes: Aircraft[];
-    let source: string;
+    let status: AircraftStatus;
     try {
-      ({ planes, source } = await fetchAircraft(v.lat, v.lon, radiusNm));
+      if (v.heightM > AIRCRAFT_MAX_VIEW_M) {
+        // Wide view: the worldwide overview, fetched at most every few minutes.
+        if (!this.overview || Date.now() - this.overview.fetched > OVERVIEW_POLL_MS) {
+          this.overview = { ...(await fetchOverview()), fetched: Date.now() };
+        }
+        planes = this.overview.planes;
+        status = { state: "overview", count: planes.length, updated: this.overview.time };
+      } else {
+        const radiusNm = Math.min(250, Math.max(30, (v.heightM / 1000) * 0.9 / 1.852));
+        const live = await fetchAircraft(v.lat, v.lon, radiusNm);
+        planes = live.planes;
+        status = { state: "ok", count: 0, source: live.source };
+      }
     } catch (err) {
       console.warn(err);
       this.statusListener({ state: "error" });
@@ -105,7 +130,7 @@ export class AircraftLayer {
           width: 20,
           height: 20,
           color: plane.altM === 0 ? Color.fromCssColorString("#9aa6bd") : Color.fromCssColorString("#ffd166"),
-          scaleByDistance: new NearFarScalar(2e4, 1.4, 1.5e6, 0.6),
+          scaleByDistance: FAR_SCALE,
           alignedAxis: Cartesian3.UNIT_Z,
           id: plane,
         });
@@ -119,13 +144,14 @@ export class AircraftLayer {
       }
     }
     this.move();
-    this.statusListener({ state: "ok", count: this.items.size, source });
+    this.statusListener(status.state === "ok" ? { ...status, count: this.items.size } : status);
   }
 
   private move() {
     const now = Date.now();
     for (const { plane, billboard } of this.items.values()) {
-      const p = advance(plane, Math.min(60_000, now - plane.seen));
+      // Overview positions can be up to 15 minutes old; carry them along their track meanwhile.
+      const p = advance(plane, Math.min(15 * 60_000, now - plane.seen));
       billboard.position = Cartesian3.fromDegrees(p.lon, p.lat, plane.altM ?? 0);
       billboard.rotation = -((plane.track ?? 0) * Math.PI) / 180;
       billboard.id = plane;

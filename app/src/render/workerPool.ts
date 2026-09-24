@@ -1,4 +1,4 @@
-import type { ColouriseRequest, DecodeRequest, TerrainRequest, WorkerResponse } from "./decode.worker";
+import type { ColouriseRequest, DecodeRequest, TerrainGeoRequest, TerrainRequest, WorkerResponse } from "./decode.worker";
 
 type Pending = { resolve: (r: WorkerResponse & { ok: true }) => void; reject: (e: Error) => void };
 
@@ -22,7 +22,7 @@ class WorkerPool {
     }
   }
 
-  private send<T extends DecodeRequest | ColouriseRequest | TerrainRequest>(
+  private send<T extends DecodeRequest | ColouriseRequest | TerrainRequest | TerrainGeoRequest>(
     req: Omit<T, "id">,
     transfer: Transferable[],
   ): Promise<WorkerResponse & { ok: true }> {
@@ -37,6 +37,11 @@ class WorkerPool {
   async terrain(url: string, size: number, seaFloor = false): Promise<Float32Array | null> {
     const res = await this.send<TerrainRequest>({ op: "terrain", url, size, seaFloor }, []);
     return res.values ?? null;
+  }
+
+  async terrainGeo(template: string, level: number, bounds: [number, number, number, number], size: number): Promise<Float32Array> {
+    const res = await this.send<TerrainGeoRequest>({ op: "terrainGeo", template, level, bounds, size }, []);
+    return res.values!;
   }
 
   async decode(bytes: ArrayBuffer, scale: number, offset: number): Promise<Float32Array> {
