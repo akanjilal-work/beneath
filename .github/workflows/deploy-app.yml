@@ -55,6 +55,8 @@ jobs:
       - name: Snapshot live sources (satellite orbits, camera lists)
         # Falls back to the copy already published if a source refuses or fails, so it never
         # blocks a deploy.
+        env:
+          ONTARIO_511_KEY: ${{ secrets.ONTARIO_511_KEY }}
         run: node scripts/snapshot-live.mjs dist/data/live https://beneath.akanjilal.dev/data/live/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

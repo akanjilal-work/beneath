@@ -1,6 +1,7 @@
 // Daily snapshot of slow-changing live sources, run by the deploy workflow (and on a schedule):
 //   satellites.json  orbital elements for active satellites (CelesTrak), propagated in the browser
-//   webcams.json     public traffic camera locations and image links (Caltrans, 511NY)
+//   webcams.json     public traffic camera locations and image links (Caltrans, 511NY, and
+//                    Ontario 511 when ONTARIO_511_KEY is set; the key never leaves the build)
 // CelesTrak does not allow cross-origin reads, and camera lists change rarely, so a daily copy
 // next to the app is enough; the positions and camera images themselves are live in the browser.
 //
@@ -52,6 +53,7 @@ async function satellites() {
 const SOURCES = [
   { id: "caltrans", name: "Caltrans (California)", url: "https://cwwp2.dot.ca.gov/", updateMinutes: 5 },
   { id: "511ny", name: "511NY (New York State)", url: "https://511ny.org/", updateMinutes: 2 },
+  { id: "511on", name: "Ontario 511", url: "https://511on.ca/", updateMinutes: 5 },
 ];
 
 async function caltrans() {
@@ -81,10 +83,25 @@ async function ny() {
     .map((c) => [round(c.Longitude), round(c.Latitude), c.Name, c.Url, 1]);
 }
 
+// One point per camera site, showing its first working view (sites often have two or three).
+async function ontario() {
+  const key = process.env.ONTARIO_511_KEY;
+  if (!key) throw new Error("ONTARIO_511_KEY not set");
+  const list = await get(`https://511on.ca/api/v2/get/cameras?key=${encodeURIComponent(key)}&format=json`);
+  const cams = [];
+  for (const c of list) {
+    const view = (c.Views ?? []).find((v) => v.Status === "Enabled" && /^https:\/\//.test(v.Url ?? ""));
+    if (!view || !Number.isFinite(c.Latitude) || !Number.isFinite(c.Longitude)) continue;
+    const name = [c.Location, view.Description].filter(Boolean).join(" · ");
+    cams.push([round(c.Longitude), round(c.Latitude), name, view.Url, 2]);
+  }
+  return cams;
+}
+
 const round = (v) => Math.round(v * 1e5) / 1e5;
 
 async function webcams() {
-  const parts = await Promise.allSettled([caltrans(), ny()]);
+  const parts = await Promise.allSettled([caltrans(), ny(), ontario()]);
   const cams = [];
   parts.forEach((p, i) => {
     if (p.status === "fulfilled") cams.push(...p.value);

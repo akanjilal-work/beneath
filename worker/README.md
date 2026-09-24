@@ -2,7 +2,9 @@
 
 Cloudflare Worker that runs every 15 minutes, polls the NOAA SWPC planetary K-index feed, validates and normalises it, and writes `live/kp.json` to the `beneath-data` R2 bucket. It also serves that file (with CORS for the app origins) at `/live/kp.json`, plus a `/health` endpoint.
 
-It also proxies **live aircraft** at `/aircraft?lat=..&lon=..&r=..` (radius in nautical miles, up to 250). The free adsb.lol feed (ODbL) does not allow cross-origin reads, so the Worker fetches it, keeps only what the globe draws, rounds the request so nearby views share a few seconds of Cloudflare cache, and adds CORS. The app's aircraft layer needs this Worker.
+It also proxies **live aircraft** at `/aircraft?lat=..&lon=..&r=..` (radius in nautical miles, up to 250). The free adsb.lol feed (ODbL) does not allow cross-origin reads, so the Worker fetches it, keeps only what the globe draws, rounds the request so nearby views share a few seconds of Cloudflare cache, and adds CORS. The app's aircraft layer needs this Worker; if adsb.lol refuses (it rate-limits shared cloud addresses) the Worker falls back to adsb.fi.
+
+It also serves **webcams near a point** at `/webcams?lat=..&lon=..&r=..` (radius in km, up to 250) from the Windy Webcams API. The Windy key is a Worker secret (`WINDY_API_KEY`), set by the deploy workflow from the repository secret of the same name, so it never reaches the browser. Results are cached for 10 minutes per area.
 
 The Worker is **optional**. NOAA's feed allows cross-origin requests, so the app reads it directly unless `VITE_LIVE_KP_URL` points at this Worker or the R2 copy. Deploying the Worker adds schema validation and insulates the app from NOAA format changes (a bad poll keeps the last good file, and the app marks old data as stale).
 

@@ -5,11 +5,14 @@
 
 import { AIRCRAFT_UPSTREAMS, aircraftQuery, normaliseAircraft } from "./aircraft";
 import { normaliseKp, SWPC_KP_URL } from "./kp";
+import { WINDY_PAGES, normaliseWebcams, webcamQuery, windyPageUrl } from "./webcams";
 
 export interface Env {
   DATA: R2Bucket;
   /** Comma-separated list of origins allowed to read live data, or "*". */
   ALLOWED_ORIGINS: string;
+  /** Windy webcams API key (a Worker secret); /webcams is unavailable without it. */
+  WINDY_API_KEY?: string;
 }
 
 const KP_KEY = "live/kp.json";
@@ -81,6 +84,23 @@ export default {
         return Response.json(file, { headers: { ...cors, "Cache-Control": "public, max-age=5" } });
       }
       return new Response(`Aircraft sources unavailable: ${failures.join(", ")}`, { status: 502, headers: cors });
+    }
+
+    if (url.pathname === "/webcams") {
+      if (!env.WINDY_API_KEY) return new Response("Webcams are not configured", { status: 503, headers: cors });
+      const q = webcamQuery(url.searchParams);
+      if (!q) return new Response("Expected lat, lon and r (kilometres)", { status: 400, headers: cors });
+      // Cameras change slowly, so each area is cached for 10 minutes at the edge.
+      const pages = await Promise.all(
+        Array.from({ length: WINDY_PAGES }, async (_, page) => {
+          const res = await fetch(windyPageUrl(q, page), {
+            headers: { "x-windy-api-key": env.WINDY_API_KEY!, "User-Agent": "beneath-live-feed (+https://github.com/akanjilal-work/beneath)" },
+            cf: { cacheTtl: 600, cacheEverything: true },
+          });
+          return res.ok ? ((await res.json()) as { webcams?: [] }) : { webcams: [] };
+        }),
+      );
+      return Response.json(normaliseWebcams(pages), { headers: { ...cors, "Cache-Control": "public, max-age=600" } });
     }
 
     if (url.pathname === `/${KP_KEY}`) {

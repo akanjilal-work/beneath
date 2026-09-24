@@ -72,7 +72,7 @@ Estimates assume part-time solo work.
 - [x] Traffic cameras: Caltrans and 511NY, daily camera list, live images in the card
 - [x] Aircraft: Worker proxy for adsb.lol, polled every 10 s around the view
 - [x] Deploy the Worker (https://beneath-live.akanjilal.workers.dev) so aircraft go live
-- [ ] More cameras outside the US (Windy webcams need a free API key)
+- [x] Ontario 511 traffic cameras (daily snapshot) and Windy webcams worldwide (near the view, through the Worker)
 
 ## Risks
 

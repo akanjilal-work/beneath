@@ -12,6 +12,7 @@ import { freshImage, webcamsFromFile, type Webcam, type WebcamsFile } from "./da
 import { formatLatLon } from "./lib/geo";
 import { Section, type LatLon } from "./lib/section";
 import { AircraftLayer, aircraftAvailable } from "./render/aircraft";
+import { WEBCAM_MAX_VIEW_M } from "./render/webcams";
 import { createGlobe, type Globe } from "./render/globe";
 import { createSurfaceView, type MoveAction } from "./render/surface";
 import { elevationProfile } from "./render/elevation";
@@ -184,7 +185,7 @@ async function main() {
       (f) => {
         const cams = webcamsFromFile(f);
         camLayer.setWebcams(cams);
-        liveLegend.webcams = { count: cams.length, sources: f.sources };
+        liveLegend.webcams = { count: cams.length, sources: f.sources, nearby: 0 };
         legend();
       },
       (err) => {
@@ -192,6 +193,18 @@ async function main() {
         camsLoad = null;
       },
     ));
+  /** Windy webcams around the view, once it is close enough for cameras to show. */
+  const loadNearbyCams = () => {
+    if (!store.state.overlays.has("webcams")) return;
+    const v = viewCentre();
+    if (v.heightM > WEBCAM_MAX_VIEW_M) return;
+    void camLayer.loadNearby(v.lat, v.lon, Math.min(250, Math.max(50, (v.heightM / 1000) * 0.9))).then((n) => {
+      if (n !== null && liveLegend.webcams) {
+        liveLegend.webcams.nearby = n;
+        legend();
+      }
+    });
+  };
   // Starting and stopping live layers costs work (polling, a full orbit pass), so only on change.
   const liveShown = new Map<string, boolean>();
   const liveChanged = (id: string, on: boolean) => liveShown.get(id) !== on && (liveShown.set(id, on), true);
@@ -207,7 +220,7 @@ async function main() {
       if (!sats) satLayer.select(null);
     }
     const cams = s.overlays.has("webcams");
-    if (cams) void ensureWebcams();
+    if (cams) void ensureWebcams().then(loadNearbyCams);
     camLayer.setVisible(cams);
     const planes = s.overlays.has("aircraft") && aircraftAvailable;
     if (liveChanged("aircraft", planes)) planeLayer.setVisible(planes);
@@ -252,6 +265,7 @@ async function main() {
   globe.onCameraIdle((lat, lon, alt) => {
     if (!autoRotate) store.set({ lat, lon, alt });
     if (liveShown.get("aircraft")) planeLayer.refresh();
+    loadNearbyCams();
   });
 
   // --- click card --------------------------------------------------------------------
@@ -483,11 +497,16 @@ async function main() {
       title: cam.name,
       subtitle: `${cam.source.name} · ${formatLatLon(cam.lat, cam.lon)}`,
       image: { src: () => freshImage(cam), alt: `Latest image from the ${cam.name} camera`, refreshMs: 60_000 },
-      note: `The agency refreshes this image about every ${cam.source.updateMinutes} minutes; the card reloads it every minute.`,
-      links: [
-        { label: "Open the image", href: cam.image },
-        { label: cam.source.name, href: cam.source.url },
-      ],
+      note: `${cam.source.id === "windy" ? "The camera's owner" : "The agency"} refreshes this image about every ${cam.source.updateMinutes} minutes; the card reloads it every minute.`,
+      links: cam.link
+        ? [
+            { label: "View on Windy", href: cam.link },
+            { label: cam.source.name, href: cam.source.url },
+          ]
+        : [
+            { label: "Open the image", href: cam.image },
+            { label: cam.source.name, href: cam.source.url },
+          ],
       actions: [{ label: "Go to the surface", primary: true, onClick: () => void goToSurface(cam.lat, cam.lon) }],
     });
   };

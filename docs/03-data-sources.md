@@ -20,7 +20,8 @@ Every layer must pass a licence check before it ships. Record the result here an
 | Recent earthquakes | USGS real-time GeoJSON feed, M2.5+ for the past 7 days, read by the browser | Points, refreshed every 10 minutes | Public domain (US Government) | "USGS earthquake feed" |
 | Satellites | CelesTrak active satellites, two-line elements, snapshot daily at deploy | About 16,000 objects; positions computed in the browser with SGP4 | Free public data (from US Space Force catalogue) | "CelesTrak" |
 | Aircraft | adsb.lol community ADS-B network (adsb.fi as a fallback), read through the Beneath Worker | Live positions around the view, every 10 s | adsb.lol: Open Database License (ODbL) 1.0; adsb.fi: free open data for non-commercial use | "adsb.lol" or "adsb.fi" |
-| Traffic cameras | Caltrans CCTV status feeds and 511NY camera list, snapshot daily; images load live from each agency | About 5,300 cameras | Public agency data; images belong to each agency | "Caltrans", "511NY" |
+| Traffic cameras | Caltrans CCTV status feeds, 511NY and Ontario 511 camera lists, snapshot daily (the Ontario key stays in the build); images load live from each agency | About 6,200 cameras | Public agency data; images belong to each agency | "Caltrans", "511NY", "Ontario 511" |
+| Webcams worldwide | Windy Webcams API v3, read through the Beneath Worker (key held as a Worker secret), near the view, cached 10 minutes | Up to 200 per area; copies of traffic cameras dropped | Windy free tier; attribution with a link required | "Webcams provided by windy.com" |
 | US close-up imagery | USGS The National Map orthoimagery (NAIP and high-resolution orthos) | About 1 m, US only, close-up views | Public domain (US Government) | "USGS The National Map" |
 | Live Kp index | NOAA Space Weather Prediction Center, planetary K-index JSON | 3-hourly | Public domain (US Government) | "NOAA SWPC" |
 

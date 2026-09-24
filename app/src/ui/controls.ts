@@ -28,14 +28,14 @@ const OVERLAY_LABELS: Record<OverlayId, { label: string; hint: string }> = {
   live: { label: "Live survey conditions", hint: "NOAA planetary Kp" },
   satellites: { label: "Satellites", hint: "About 16,000 active, moving live" },
   aircraft: { label: "Aircraft", hint: "Live flights near the view" },
-  webcams: { label: "Traffic cameras", hint: "Live images, California and New York" },
+  webcams: { label: "Cameras", hint: "Live images: traffic cameras, and webcams worldwide" },
 };
 
 /** What the legend needs to know about the live layers. */
 export interface LiveLegend {
   satellites: { count: number; updated: string } | null;
   aircraft: AircraftStatus;
-  webcams: { count: number; sources: WebcamSource[] } | null;
+  webcams: { count: number; sources: WebcamSource[]; nearby: number } | null;
 }
 
 export function setupControls(store: Store, available: Set<OverlayId>) {
@@ -227,8 +227,20 @@ export function renderLegend(
       h(
         "div",
         { class: "legend-item" },
-        h("div", { class: "legend-title" }, h("span", null, "Traffic cameras"), h("span", null, `${live.webcams.count.toLocaleString()} · zoom in`)),
-        h("div", { class: "legend-source" }, live.webcams.sources.map((x) => x.name).join(" · ")),
+        h("div", { class: "legend-title" }, h("span", null, "Cameras"), h("span", null, "zoom in to see them")),
+        h(
+          "div",
+          { class: "legend-keys" },
+          h("span", null, h("i", { style: "background:#34d399" }), `Traffic (${live.webcams.count.toLocaleString()})`),
+          h("span", null, h("i", { style: "background:#60a5fa" }), live.webcams.nearby ? `Webcams near view (${live.webcams.nearby})` : "Webcams near view"),
+        ),
+        h(
+          "div",
+          { class: "legend-source" },
+          live.webcams.sources.map((x) => x.name.replace(/ \(.*\)/, "")).join(" · "),
+          " · ",
+          h("a", { href: "https://www.windy.com/webcams", target: "_blank", rel: "noopener" }, "Webcams provided by windy.com"),
+        ),
       ),
     );
   }
@@ -262,8 +274,13 @@ export function renderSources(manifest: Manifest) {
     h(
       "div",
       null,
-      h("strong", null, "Traffic cameras"),
-      h("span", null, "Caltrans and 511NY public traffic cameras; images belong to each agency"),
+      h("strong", null, "Cameras"),
+      h(
+        "span",
+        null,
+        "Caltrans, 511NY and Ontario 511 traffic cameras (images belong to each agency); webcams worldwide provided by ",
+        h("a", { href: "https://www.windy.com/webcams", target: "_blank", rel: "noopener" }, "windy.com"),
+      ),
     ),
     h(
       "div",
