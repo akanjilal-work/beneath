@@ -64,6 +64,16 @@ Estimates assume part-time solo work.
 - [ ] Guided stories: fly-throughs of well-known features with a short card each
 - [ ] More public-domain layers (volcanoes, sea-floor age) where a source needs no licence terms
 
+## Phase 6. Live above the surface
+
+- [x] Surface view: angled arrival, higher start where imagery is 10 m, card closes on arrival
+- [x] About 1 m USGS imagery over the US for close-up views (public domain); no-data fill made transparent
+- [x] Satellites: daily CelesTrak snapshot, SGP4 in the browser, orbit loop on click
+- [x] Traffic cameras: Caltrans and 511NY, daily camera list, live images in the card
+- [x] Aircraft: Worker proxy for adsb.lol, polled every 10 s around the view
+- [ ] Deploy the Worker (needs a Cloudflare account; see 06) so aircraft go live
+- [ ] More cameras outside the US (Windy webcams need a free API key)
+
 ## Risks
 
 | Risk | Impact | Mitigation |

@@ -1,20 +1,28 @@
 import "./styles.css";
-import type { ImageryLayer } from "cesium";
+import { Cartesian2, Cartographic, Math as CesiumMath, type ImageryLayer } from "cesium";
 import { DepositIndex, type Deposit, type DepositsFile } from "./data/deposits";
 import { Gazetteer, placeLabel, type PlacesFile } from "./data/gazetteer";
+import { LIVE_SNAPSHOT_URL, US_IMAGERY_BOXES } from "./config";
+import type { Aircraft } from "./data/aircraft";
 import { fetchJson, findLayer, loadManifest, type Manifest, type RasterEntry } from "./data/manifest";
 import { PlateModel, type FeatureCollection } from "./data/plates";
 import { LIVE_QUAKES_URL, QuakeIndex, quakesFromFeed, quakesFromFile, type Quake, type QuakesFile, type UsgsFeed } from "./data/quakes";
+import { ORBIT_CLASSES, positionAt, satellitesFromFile, type Satellite, type SatellitesFile } from "./data/satellites";
+import { freshImage, webcamsFromFile, type Webcam, type WebcamsFile } from "./data/webcams";
+import { formatLatLon } from "./lib/geo";
 import { Section, type LatLon } from "./lib/section";
+import { AircraftLayer, aircraftAvailable } from "./render/aircraft";
 import { createGlobe, type Globe } from "./render/globe";
 import { createSurfaceView, type MoveAction } from "./render/surface";
 import { elevationProfile } from "./render/elevation";
 import { QuakeLayer } from "./render/quakes";
+import { SatelliteLayer } from "./render/satellites";
+import { WebcamLayer } from "./render/webcams";
 import { createValueLayer } from "./render/valueImagery";
 import { ValueSource } from "./render/valueSource";
 import { MAX_DEPTH, Store, parseHash, type AppState, type OverlayId } from "./state";
-import { renderCard, renderCardLoading, type PointFacts } from "./ui/card";
-import { depthWeights, nearestStop, renderLegend, renderSources, setupControls } from "./ui/controls";
+import { renderCard, renderCardLoading, renderInfoCard, stopCardImage, type PointFacts } from "./ui/card";
+import { depthWeights, nearestStop, renderLegend, renderSources, setupControls, type LiveLegend } from "./ui/controls";
 import { $ } from "./ui/dom";
 import { createKpBadge } from "./ui/kp";
 import { setupSearch } from "./ui/search";
@@ -124,15 +132,85 @@ async function main() {
   if (manifest.layers.some((l) => l.id === "deposits")) available.add("deposits");
   if (manifest.layers.some((l) => l.id === "plates")) available.add("boundaries");
   if (manifest.layers.some((l) => l.id === "coastlines")) available.add("coastlines");
+  available.add("satellites");
+  available.add("webcams");
+  if (aircraftAvailable) available.add("aircraft");
   setupControls(store, available);
   renderSources(manifest);
 
   const kp = createKpBadge();
   const quakeLayer = new QuakeLayer(globe.viewer.scene);
+
+  // --- live above the surface ------------------------------------------------------------
+  const liveLegend: LiveLegend = { satellites: null, aircraft: { state: "off" }, webcams: null };
+  const satLayer = new SatelliteLayer(globe.viewer.scene);
+  const camLayer = new WebcamLayer(globe.viewer.scene);
+  /** The ground point in the middle of the screen, and how high the camera is. */
+  const viewCentre = () => {
+    const { camera, scene } = globe.viewer;
+    const middle = new Cartesian2(scene.canvas.clientWidth / 2, scene.canvas.clientHeight / 2);
+    const hit = camera.pickEllipsoid(middle, scene.globe.ellipsoid);
+    const c = hit ? Cartographic.fromCartesian(hit) : camera.positionCartographic;
+    return { lat: CesiumMath.toDegrees(c.latitude), lon: CesiumMath.toDegrees(c.longitude), heightM: camera.positionCartographic.height };
+  };
+  const planeLayer = new AircraftLayer(globe.viewer.scene, viewCentre);
+  planeLayer.onStatus((st) => {
+    liveLegend.aircraft = st;
+    legend();
+  });
+  const snapshot = <T,>(file: string) =>
+    fetch(new URL(file, LIVE_SNAPSHOT_URL)).then((r) => {
+      if (!r.ok) throw new Error(`${file} returned ${r.status}`);
+      return r.json() as Promise<T>;
+    });
+  let satsLoad: Promise<void> | null = null;
+  const ensureSatellites = () =>
+    (satsLoad ??= snapshot<SatellitesFile>("satellites.json").then(
+      (f) => {
+        const sats = satellitesFromFile(f);
+        satLayer.setSatellites(sats);
+        liveLegend.satellites = { count: sats.length, updated: f.updated };
+        satLayer.setVisible(store.state.overlays.has("satellites"));
+        legend();
+      },
+      (err) => {
+        console.warn(err);
+        satsLoad = null;
+      },
+    ));
+  let camsLoad: Promise<void> | null = null;
+  const ensureWebcams = () =>
+    (camsLoad ??= snapshot<WebcamsFile>("webcams.json").then(
+      (f) => {
+        const cams = webcamsFromFile(f);
+        camLayer.setWebcams(cams);
+        liveLegend.webcams = { count: cams.length, sources: f.sources };
+        legend();
+      },
+      (err) => {
+        console.warn(err);
+        camsLoad = null;
+      },
+    ));
+  // Starting and stopping live layers costs work (polling, a full orbit pass), so only on change.
+  const liveShown = new Map<string, boolean>();
+  const liveChanged = (id: string, on: boolean) => liveShown.get(id) !== on && (liveShown.set(id, on), true);
+
   let depositsDrawn = false;
   const applyOverlays = (s: AppState) => {
     kp.setActive(s.overlays.has("live"));
     quakeLayer.setVisible(s.overlays.has("quakes"));
+    const sats = s.overlays.has("satellites");
+    if (liveChanged("satellites", sats)) {
+      if (sats) void ensureSatellites();
+      satLayer.setVisible(sats);
+      if (!sats) satLayer.select(null);
+    }
+    const cams = s.overlays.has("webcams");
+    if (cams) void ensureWebcams();
+    camLayer.setVisible(cams);
+    const planes = s.overlays.has("aircraft") && aircraftAvailable;
+    if (liveChanged("aircraft", planes)) planeLayer.setVisible(planes);
     globe.setCoastlinesVisible(s.overlays.has("coastlines"));
     if (s.overlays.has("deposits") && data.deposits && !depositsDrawn) {
       globe.setDeposits(data.deposits.deposits);
@@ -142,7 +220,7 @@ async function main() {
     applyDepth(s);
   };
 
-  const legend = () => renderLegend(store.state, manifest, data.rasters, data.plates, data.quakes);
+  const legend = () => renderLegend(store.state, manifest, data.rasters, data.plates, data.quakes, liveLegend);
 
   // --- see beneath ---------------------------------------------------------------------
   const applyXray = (s: AppState) => {
@@ -173,6 +251,7 @@ async function main() {
   });
   globe.onCameraIdle((lat, lon, alt) => {
     if (!autoRotate) store.set({ lat, lon, alt });
+    if (liveShown.get("aircraft")) planeLayer.refresh();
   });
 
   // --- click card --------------------------------------------------------------------
@@ -181,6 +260,8 @@ async function main() {
 
   const closeCard = () => {
     card.hidden = true;
+    stopCardImage();
+    satLayer.select(null);
     globe.clearPickMarker();
     store.set({ pick: null });
   };
@@ -302,9 +383,12 @@ async function main() {
     // Start on plain imagery so the land itself is visible; the depth slider still works.
     if (!surface.active) depthBeforeSurface = store.state.depth;
     store.set({ depth: 0 });
-    if (window.matchMedia("(max-width: 760px)").matches) closeCard();
+    // The card and its marker would cover the view; tapping the ground brings a card back.
+    closeCard();
     const ground = await globe.groundHeight(lat, lon);
-    surface.enter(lat, lon, ground);
+    // Closer where the 1 m US imagery exists; higher elsewhere, where 10 m imagery looks soft up close.
+    const sharp = US_IMAGERY_BOXES.some(([w, s, e, n]) => lon >= w && lon <= e && lat >= s && lat <= n);
+    surface.enter(lat, lon, ground, sharp ? 1200 : 3000);
   };
 
   surface.onChange((active) => {
@@ -344,6 +428,74 @@ async function main() {
       return;
     }
     void openCard(lat, lon, deposit, quake);
+  });
+
+  // --- cards for things above the surface ------------------------------------------------
+  const openLiveCard = () => {
+    card.hidden = false;
+    $("layers-panel").classList.remove("open");
+    globe.clearPickMarker();
+    satLayer.select(null);
+  };
+  const showSatellite = (sat: Satellite) => {
+    openLiveCard();
+    satLayer.select(sat);
+    const p = positionAt(sat, new Date());
+    const hours = sat.periodMin >= 120 ? `${(sat.periodMin / 60).toFixed(1)} hours` : `${Math.round(sat.periodMin)} minutes`;
+    renderInfoCard({
+      title: sat.name,
+      subtitle: `NORAD ${sat.noradId} · ${ORBIT_CLASSES.find((c) => c.id === sat.cls)!.label}`,
+      headline: p
+        ? `Now ${Math.round(p.altKm).toLocaleString()} km up over ${formatLatLon(p.lat, p.lon)}, moving at ${p.speedKmS.toFixed(1)} km/s.`
+        : "Its published orbit is too old to place it now.",
+      rows: [
+        ["One orbit", hours],
+        ["Inclination", `${sat.inclinationDeg.toFixed(1)}°`],
+        ["Average height", `${Math.round(sat.meanAltKm).toLocaleString()} km`],
+        ["Eccentricity", sat.eccentricity.toFixed(4), sat.eccentricity < 0.01 ? "nearly circular" : undefined],
+      ],
+      note: "The loop on the globe is one full orbit. Positions are predicted from published orbital elements and drift by a few kilometres a day.",
+      links: [{ label: "Catalogue entry on CelesTrak", href: `https://celestrak.org/satcat/table-satcat.php?CATNR=${sat.noradId}` }],
+    });
+  };
+  const showAircraft = (a: Aircraft) => {
+    openLiveCard();
+    const feet = a.altM === null ? null : Math.round(a.altM / 0.3048);
+    const flying = a.altM !== 0;
+    renderInfoCard({
+      title: a.callsign ?? a.reg ?? a.hex.toUpperCase(),
+      subtitle: [a.type, a.reg].filter(Boolean).join(" · ") || `ICAO ${a.hex.toUpperCase()}`,
+      headline: flying
+        ? `Flying${feet !== null ? ` at ${feet.toLocaleString()} ft` : ""}${a.speedKt ? `, ${Math.round(a.speedKt)} knots` : ""}${a.track !== null ? `, heading ${Math.round(a.track)}°` : ""}.`
+        : "On the ground.",
+      rows: [
+        ["Altitude", feet === null ? "not reported" : feet === 0 ? "on the ground" : `${feet.toLocaleString()} ft`, a.altM ? `${a.altM.toLocaleString()} m` : undefined],
+        ["Ground speed", a.speedKt ? `${Math.round(a.speedKt)} kt` : "not reported", a.speedKt ? `${Math.round(a.speedKt * 1.852)} km/h` : undefined],
+        ["ICAO address", a.hex.toUpperCase()],
+      ],
+      note: "Positions come from volunteer ADS-B receivers and refresh every 10 seconds; between updates the plane moves along its track.",
+      links: [{ label: "Follow on adsb.lol", href: `https://adsb.lol/?icao=${encodeURIComponent(a.hex)}` }],
+    });
+  };
+  const showWebcam = (cam: Webcam) => {
+    openLiveCard();
+    renderInfoCard({
+      title: cam.name,
+      subtitle: `${cam.source.name} · ${formatLatLon(cam.lat, cam.lon)}`,
+      image: { src: () => freshImage(cam), alt: `Latest image from the ${cam.name} camera`, refreshMs: 60_000 },
+      note: `The agency refreshes this image about every ${cam.source.updateMinutes} minutes; the card reloads it every minute.`,
+      links: [
+        { label: "Open the image", href: cam.image },
+        { label: cam.source.name, href: cam.source.url },
+      ],
+      actions: [{ label: "Go to the surface", primary: true, onClick: () => void goToSurface(cam.lat, cam.lon) }],
+    });
+  };
+  globe.onPickLive((obj) => {
+    if (draft) return;
+    if (obj.kind === "satellite") showSatellite(obj as Satellite);
+    else if (obj.kind === "aircraft") showAircraft(obj as Aircraft);
+    else showWebcam(obj as Webcam);
   });
 
   setupSearch(

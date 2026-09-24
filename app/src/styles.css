@@ -975,6 +975,34 @@ body.section-open .click-card {
   }
 }
 
+.card-image {
+  display: block;
+  width: 100%;
+  margin: 10px 0 4px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+}
+.card-note {
+  font-size: 12.5px;
+  margin: 8px 0 0;
+}
+.card-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 10px 0 0;
+  font-size: 13.5px;
+}
+.card-links a {
+  color: var(--accent);
+}
+.check input:disabled + span {
+  opacity: 0.55;
+}
+
 /* --- dialogs & loading -------------------------------------------------------------- */
 .dialog {
   max-width: min(560px, calc(100vw - 32px));

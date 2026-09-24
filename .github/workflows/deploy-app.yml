@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths: ["app/**", ".github/workflows/deploy-app.yml"]
   workflow_dispatch:
+  # Daily redeploy so the satellite orbits and camera lists stay fresh.
+  schedule:
+    - cron: "23 5 * * *"
 
 permissions:
   contents: read
@@ -38,6 +41,7 @@ jobs:
         env:
           VITE_DATA_BASE_URL: ${{ vars.VITE_DATA_BASE_URL }}
           VITE_LIVE_KP_URL: ${{ vars.VITE_LIVE_KP_URL }}
+          VITE_LIVE_PROXY_URL: ${{ vars.VITE_LIVE_PROXY_URL }}
       - name: Bundle data from release
         # Skipped when tiles are served from R2 (VITE_DATA_BASE_URL set).
         if: ${{ vars.VITE_DATA_BASE_URL == '' }}
@@ -48,6 +52,10 @@ jobs:
           gh release download "$DATA_RELEASE" --repo "$GITHUB_REPOSITORY" --dir dist/data
           ls -la dist/data
           test -f dist/data/layers.json
+      - name: Snapshot live sources (satellite orbits, camera lists)
+        # Falls back to the copy already published if a source refuses or fails, so it never
+        # blocks a deploy.
+        run: node scripts/snapshot-live.mjs dist/data/live https://beneath.akanjilal.dev/data/live/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

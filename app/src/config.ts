@@ -19,6 +19,14 @@ export const LIVE_KP_URL: string =
 
 export const LIVE_POLL_MS = 5 * 60 * 1000;
 
+// Daily snapshots of slow-changing live sources (satellite orbits, camera lists), written next
+// to the app by the deploy workflow (scripts/snapshot-live.mjs).
+export const LIVE_SNAPSHOT_URL = new URL("./data/live/", document.baseURI).toString();
+
+// The Beneath Worker, which proxies feeds that browsers cannot read directly (live aircraft).
+// Leave unset and the aircraft layer is shown as unavailable.
+export const LIVE_PROXY_URL: string = env.VITE_LIVE_PROXY_URL || "";
+
 // Elevation for 3D terrain: Terrarium-encoded PNG tiles (Web Mercator XYZ). The default is the
 // public AWS Terrain Tiles dataset, which allows cross-origin reads. Set VITE_TERRAIN_URL to "off"
 // to fall back to a smooth globe.
@@ -32,6 +40,19 @@ export const TERRAIN_MAX_LEVEL = 15;
 export const IMAGERY_URL: string =
   env.VITE_IMAGERY_URL || "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2024_3857/default/g/{z}/{y}/{x}.jpg";
 export const IMAGERY_MAX_LEVEL = 15;
+
+// Sharper imagery over the United States: USGS The National Map orthoimagery (NAIP and
+// high-resolution orthos, public domain), about 1 m per pixel. The service has no tiles
+// outside the US, so it is only requested inside these boxes (west, south, east, north).
+export const US_IMAGERY_URL = "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}";
+export const US_IMAGERY_MAX_LEVEL = 18;
+export const US_IMAGERY_BOXES: [number, number, number, number][] = [
+  [-125, 24.4, -66.8, 49.5], // contiguous states
+  [-170, 51, -129.9, 71.5], // Alaska
+  [-160.6, 18.8, -154.7, 22.3], // Hawaii
+  [-67.4, 17.8, -65.2, 18.6], // Puerto Rico
+];
+export const US_IMAGERY_CREDIT = "USGS The National Map: Orthoimagery (public domain)";
 export const IMAGERY_CREDIT: string =
   env.VITE_IMAGERY_CREDIT ||
   'Sentinel-2 cloudless 2024 by <a href="https://s2maps.eu" target="_blank" rel="noopener">EOX IT Services GmbH</a> (contains modified Copernicus Sentinel data 2024), <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener">CC BY-NC-SA 4.0</a>';

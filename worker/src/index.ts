@@ -1,7 +1,9 @@
 // Beneath live feed: every 15 minutes, poll NOAA SWPC for the planetary K-index and write a
 // normalised live/kp.json to R2. The same Worker also serves that file with CORS headers,
 // so the app can read it either from the R2 custom domain or from this Worker's URL.
+// It also proxies live aircraft (/aircraft), which the free ADS-B feeds do not serve to browsers.
 
+import { AIRCRAFT_UPSTREAM, aircraftQuery, normaliseAircraft } from "./aircraft";
 import { normaliseKp, SWPC_KP_URL } from "./kp";
 
 export interface Env {
@@ -58,6 +60,20 @@ export default {
         { ok: true, kpUpdated: head?.uploaded.toISOString() ?? null },
         { headers: { ...cors, "Cache-Control": "no-store" } },
       );
+    }
+
+    if (url.pathname === "/aircraft") {
+      const q = aircraftQuery(url.searchParams);
+      if (!q) return new Response("Expected lat, lon and r (nautical miles)", { status: 400, headers: cors });
+      // Cloudflare caches the upstream call for a few seconds, so many viewers of the same area
+      // cost one request.
+      const res = await fetch(`${AIRCRAFT_UPSTREAM}/${q.lat}/${q.lon}/${q.radius}`, {
+        headers: { "User-Agent": "beneath-live-feed (+https://github.com/akanjilal-work/beneath)" },
+        cf: { cacheTtl: 8, cacheEverything: true },
+      });
+      if (!res.ok) return new Response(`Aircraft source returned ${res.status}`, { status: 502, headers: cors });
+      const file = normaliseAircraft(await res.json(), Date.now() / 1000);
+      return Response.json(file, { headers: { ...cors, "Cache-Control": "public, max-age=5" } });
     }
 
     if (url.pathname === `/${KP_KEY}`) {

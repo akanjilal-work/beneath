@@ -22,6 +22,7 @@ import {
   PolylineColorAppearance,
   PolylineGeometry,
   Primitive,
+  Rectangle,
   SceneMode,
   SingleTileImageryProvider,
   ScreenSpaceEventHandler,
@@ -35,10 +36,16 @@ import {
   type PointPrimitive,
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
-import { IMAGERY_CREDIT, IMAGERY_MAX_LEVEL, IMAGERY_URL } from "../config";
+import { IMAGERY_CREDIT, IMAGERY_MAX_LEVEL, IMAGERY_URL, US_IMAGERY_BOXES, US_IMAGERY_CREDIT, US_IMAGERY_MAX_LEVEL, US_IMAGERY_URL } from "../config";
 import type { Deposit } from "../data/deposits";
 import type { PlateModel } from "../data/plates";
 import type { Quake } from "../data/quakes";
+
+/** Things above the surface that open their own card when clicked. */
+export type LiveObject = { kind: "satellite" | "aircraft" | "webcam" };
+const isLive = (id: unknown): id is LiveObject =>
+  typeof id === "object" && id !== null && ["satellite", "aircraft", "webcam"].includes((id as LiveObject).kind);
+import { NoDataImageryProvider } from "./noDataImagery";
 import { createTerrainProvider } from "./terrain";
 
 // No Cesium ion: base imagery is the Natural Earth II tiles shipped inside the Cesium package.
@@ -47,6 +54,8 @@ Ion.defaultAccessToken = "";
 export interface Globe {
   viewer: Viewer;
   onPick(fn: (lon: number, lat: number, deposit: Deposit | null, quake: Quake | null) => void): void;
+  /** A satellite, aircraft or webcam was clicked. */
+  onPickLive(fn: (obj: LiveObject) => void): void;
   /** Called with the ground point under the cursor while set; used to preview a section line. */
   setHover(fn: ((lon: number, lat: number) => void) | null): void;
   onInteract(fn: () => void): void;
@@ -160,6 +169,19 @@ export async function createGlobe(container: HTMLElement, creditContainer: HTMLE
       credit: new Credit(IMAGERY_CREDIT, false),
     }),
   );
+  // About 1 m imagery over the US, for close-up views only. From regional heights Sentinel-2 alone
+  // looks cleaner: the two sources photograph water in different tones, which reads as a patchwork.
+  for (const [w, s, e, n] of US_IMAGERY_BOXES) {
+    const provider = new NoDataImageryProvider({
+      url: US_IMAGERY_URL,
+      maximumLevel: US_IMAGERY_MAX_LEVEL,
+      rectangle: Rectangle.fromDegrees(w, s, e, n),
+      credit: new Credit(US_IMAGERY_CREDIT, false),
+    });
+    // Where the service has no data (Canada falls inside the boxes, and open water) its flat
+    // fill is made transparent, so the global imagery shows through.
+    viewer.imageryLayers.add(new ImageryLayer(provider, { minimumTerrainLevel: 13 }));
+  }
   scene.screenSpaceCameraController.maximumZoomDistance = 40_000_000;
   viewer.cesiumWidget.creditContainer.classList.add("cesium-credits");
 
@@ -257,11 +279,16 @@ export async function createGlobe(container: HTMLElement, creditContainer: HTMLE
   const handler = new ScreenSpaceEventHandler(scene.canvas);
   const pickListeners: ((lon: number, lat: number, d: Deposit | null, q: Quake | null) => void)[] = [];
   let hoverListener: ((lon: number, lat: number) => void) | null = null;
+  const liveListeners: ((obj: LiveObject) => void)[] = [];
   const interactListeners: (() => void)[] = [];
   const idleListeners: ((lat: number, lon: number, alt: number) => void)[] = [];
 
   handler.setInputAction((e: ScreenSpaceEventHandler.PositionedEvent) => {
     const picked = scene.pick(e.position);
+    if (isLive(picked?.id)) {
+      for (const fn of liveListeners) fn(picked.id);
+      return;
+    }
     let deposit: Deposit | null = null;
     let quake: Quake | null = null;
     if (picked?.primitive && (picked.primitive as PointPrimitive).id && picked.collection === points) {
@@ -298,7 +325,8 @@ export async function createGlobe(container: HTMLElement, creditContainer: HTMLE
       return;
     }
     const picked = scene.pick(e.endPosition);
-    const pickable = picked?.collection === points || (picked?.id && typeof picked.id === "object" && "depthKm" in picked.id);
+    const pickable =
+      picked?.collection === points || isLive(picked?.id) || (picked?.id && typeof picked.id === "object" && "depthKm" in picked.id);
     scene.canvas.style.cursor = pickable ? "pointer" : "";
   }, ScreenSpaceEventType.MOUSE_MOVE);
 
@@ -349,6 +377,7 @@ export async function createGlobe(container: HTMLElement, creditContainer: HTMLE
   const api: Globe = {
     viewer,
     onPick: (fn) => pickListeners.push(fn),
+    onPickLive: (fn) => liveListeners.push(fn),
     onInteract: (fn) => interactListeners.push(fn),
     onCameraIdle: (fn) => idleListeners.push(fn),
 

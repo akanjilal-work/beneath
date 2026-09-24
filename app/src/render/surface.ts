@@ -7,7 +7,7 @@ import { Cartesian3, Cartographic, Math as CesiumMath, Transforms, type Viewer }
  */
 export interface SurfaceView {
   readonly active: boolean;
-  enter(lat: number, lon: number, groundHeight: number): void;
+  enter(lat: number, lon: number, groundHeight: number, startHeight?: number): void;
   exit(): void;
   /** Hold a movement key down (pad buttons use this too). */
   press(action: MoveAction, down: boolean): void;
@@ -33,8 +33,10 @@ const KEYS: Record<string, MoveAction> = {
   shift: "fast",
 };
 
-// Metres above ground on arrival. The imagery is 10 m per pixel, so much lower looks soft.
-const START_HEIGHT = 500;
+// Arrival looks down at an angle like a map's 3D view. The caller picks the height to suit
+// the imagery: about 1 m per pixel over the US, 10 m elsewhere, which looks soft up close.
+const START_HEIGHT = 1500;
+const START_PITCH = -30;
 const MIN_HEIGHT = 2;
 const MAX_HEIGHT = 20_000;
 const LOOK_SPEED = 0.0035; // radians per pixel dragged
@@ -175,15 +177,15 @@ export function createSurfaceView(viewer: Viewer): SurfaceView {
     get active() {
       return active;
     },
-    enter(lat, lon, groundHeight) {
-      agl = START_HEIGHT;
+    enter(lat, lon, groundHeight, startHeight = START_HEIGHT) {
+      agl = startHeight;
       heading = 0;
-      pitch = CesiumMath.toRadians(-18);
+      pitch = CesiumMath.toRadians(START_PITCH);
       held.clear();
-      // Arrive a little south of the point, looking north at it.
-      const back = (START_HEIGHT * 3) / 111_320;
+      // Arrive south of the point, looking north, so the point sits in the middle of the view.
+      const back = startHeight / Math.tan(-pitch) / 111_320;
       camera.flyTo({
-        destination: Cartesian3.fromDegrees(lon, lat - back, groundHeight + START_HEIGHT),
+        destination: Cartesian3.fromDegrees(lon, lat - back, groundHeight + startHeight),
         orientation: { heading, pitch, roll: 0 },
         duration: 3,
         complete: () => {

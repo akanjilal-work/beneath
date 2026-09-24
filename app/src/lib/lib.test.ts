@@ -2,7 +2,10 @@ import { deflateSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { normaliseKp, summariseKp } from "../data/live";
 import { boundaryClass } from "../data/plates";
+import { advance, aircraftFromFile } from "../data/aircraft";
 import { QuakeIndex, depthColour, magnitudePixels, quakesFromFeed, quakesFromFile } from "../data/quakes";
+import { orbitPath, positionAt, satellitesFromFile } from "../data/satellites";
+import { freshImage, webcamsFromFile } from "../data/webcams";
 import { parseHash, toHash } from "../state";
 import { decodeValues, encodeValue, sampleBilinear } from "./encoding";
 import { closestOnSegment, haversineKm, lonLatToGeoTilePixel, lonLatToTilePixel, parseLatLon, pointInPolygon } from "./geo";
@@ -305,5 +308,68 @@ describe("earthquakes", () => {
     expect(depthColour(700)).toBe("rgb(191,90,242)");
     expect(magnitudePixels(9)).toBeGreaterThan(magnitudePixels(6));
     expect(magnitudePixels(5)).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("satellites", () => {
+  const file = {
+    updated: "2026-09-24T05:00:00Z",
+    source: "CelesTrak",
+    sourceUrl: "https://celestrak.org/",
+    sats: [["ISS (ZARYA)", "1 25544U 98067A   26266.88389698  .00009434  00000+0  17760-3 0  9994", "2 25544  51.6318 171.6234 0004723 174.4397 185.6645 15.49253495587058"], ["NAVSTAR 43 (USA 132)", "1 24876U 97035A   26266.42196506  .00000058  00000+0  00000+0 0  9997", "2 24876  56.0518  94.7335 0106106  59.0350 302.0798  2.00564511213921"], ["SES-1", "1 36516U 10016A   26266.89242444 -.00000116  00000+0  00000+0 0  9995", "2 36516   0.0399 284.7199 0002690 268.4679  29.8403  1.00271823 60021"], ["BROKEN", "1 junk", "2 junk"]] as [string, string, string][],
+  };
+  const sats = satellitesFromFile(file);
+  it("parses orbital elements and classifies orbits", () => {
+    expect(sats.map((s) => s.cls)).toEqual(["station", "meo", "geo"]);
+    expect(sats[0].noradId).toBe("25544");
+    expect(sats[0].periodMin).toBeGreaterThan(90);
+    expect(sats[0].periodMin).toBeLessThan(94);
+    expect(sats[2].periodMin).toBeGreaterThan(1430);
+    expect(sats[2].periodMin).toBeLessThan(1442);
+  });
+  it("places the ISS about 420 km up, moving at about 7.7 km/s", () => {
+    const p = positionAt(sats[0], new Date(Date.parse(file.updated)));
+    expect(p!.altKm).toBeGreaterThan(380);
+    expect(p!.altKm).toBeLessThan(460);
+    expect(p!.speedKmS).toBeCloseTo(7.66, 1);
+    expect(Math.abs(p!.lat)).toBeLessThanOrEqual(52);
+  });
+  it("draws one closed orbit", () => {
+    const path = orbitPath(sats[0], new Date(Date.parse(file.updated)), 60);
+    expect(path.length).toBe(61);
+    const gap = Math.hypot(path[0].x - path[60].x, path[0].y - path[60].y, path[0].z - path[60].z);
+    expect(gap).toBeLessThan(150); // km; the loop closes up to small orbital drift
+  });
+  it("keeps geostationary satellites near 35,786 km", () => {
+    const p = positionAt(sats[2], new Date(Date.parse(file.updated)));
+    expect(p!.altKm).toBeGreaterThan(35_600);
+    expect(p!.altKm).toBeLessThan(36_000);
+  });
+});
+
+describe("aircraft and cameras", () => {
+  it("reads the proxy file and moves aircraft along their track", () => {
+    const [a, g] = aircraftFromFile({
+      time: 1_790_000_000,
+      source: "adsb.lol",
+      licence: "ODbL",
+      fields: [],
+      aircraft: [["abc", "ACA123", -79.6, 43.7, 10_000, 450, 90, "B38M", "C-FSEQ"], ["def", null, -79.6, 43.7, 0, 10, 0, null, null], [null, "BAD", 0, 0, 0, 0, 0, null, null]],
+    });
+    expect(a.callsign).toBe("ACA123");
+    const later = advance(a, 60 * 60 * 1000); // one hour due east at 450 kt = 833 km
+    expect(later.lat).toBeCloseTo(43.7, 1);
+    expect((later.lon - a.lon) * 111.2 * Math.cos((43.7 * Math.PI) / 180)).toBeCloseTo(833, -1);
+    expect(advance(g, 60_000)).toEqual({ lon: -79.6, lat: 43.7 }); // on the ground: stays put
+  });
+  it("keeps cameras with an https image and busts the cache each minute", () => {
+    const cams = webcamsFromFile({
+      updated: "",
+      fields: [],
+      sources: [{ id: "x", name: "X", url: "https://x", updateMinutes: 5 }],
+      cams: [[-122, 37, "A", "https://cam/a.jpg", 0], [-122, 37, "B", "http://cam/b.jpg", 0]],
+    });
+    expect(cams.map((c) => c.name)).toEqual(["A"]);
+    expect(freshImage(cams[0], 120_000)).toBe("https://cam/a.jpg?t=2");
   });
 });

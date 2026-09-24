@@ -196,3 +196,56 @@ export function renderCardLoading(lat: number, lon: number) {
   );
 }
 
+
+export interface InfoCard {
+  title: string;
+  subtitle: string;
+  headline?: string;
+  rows?: [string, string, string?][];
+  /** A live image, reloaded every refreshMs while the card is open. */
+  image?: { src: () => string; alt: string; refreshMs: number };
+  links?: { label: string; href: string }[];
+  actions?: { label: string; primary?: boolean; onClick: () => void }[];
+  note?: string;
+}
+
+let imageTimer = 0;
+
+/** A card for something above the surface: a satellite, an aircraft or a camera. */
+export function renderInfoCard(card: InfoCard) {
+  window.clearInterval(imageTimer);
+  const rows: HTMLElement[] = [];
+  for (const [label, value, note] of card.rows ?? []) rows.push(h("dt", null, label), h("dd", null, value, note ? h("small", null, note) : null));
+  let img: HTMLImageElement | null = null;
+  if (card.image) {
+    const image = card.image;
+    img = h("img", { class: "card-image", src: image.src(), alt: image.alt, loading: "eager", referrerpolicy: "no-referrer" });
+    img.addEventListener("error", () => img!.replaceWith(h("p", { class: "muted" }, "The camera image is not available right now.")));
+    imageTimer = window.setInterval(() => {
+      if (!img?.isConnected) return window.clearInterval(imageTimer);
+      img.src = image.src();
+    }, image.refreshMs);
+  }
+  const actions = (card.actions ?? []).map((a) => {
+    const b = h("button", { class: a.primary ? "button primary" : "button", type: "button" }, a.label);
+    b.addEventListener("click", a.onClick);
+    return b;
+  });
+  const parts: (HTMLElement | null)[] = [
+    h("h2", { class: "card-place", id: "card-title" }, card.title),
+    h("p", { class: "card-coords" }, card.subtitle),
+    img,
+    card.headline ? h("p", { class: "card-headline" }, card.headline) : null,
+    rows.length ? h("dl", { class: "card-rows" }, rows) : null,
+    card.note ? h("p", { class: "muted card-note" }, card.note) : null,
+    card.links?.length
+      ? h("p", { class: "card-links" }, card.links.map((l) => h("a", { href: l.href, target: "_blank", rel: "noopener" }, l.label)))
+      : null,
+    actions.length ? h("div", { class: "card-actions" }, actions) : null,
+  ];
+  $("card-content").replaceChildren(...parts.filter((p): p is HTMLElement => p !== null));
+}
+
+export function stopCardImage() {
+  window.clearInterval(imageTimer);
+}

@@ -1,9 +1,12 @@
 import { COMMODITY_GROUPS } from "../data/deposits";
 import { DEPTH_GRADIENT, type QuakeIndex } from "../data/quakes";
+import { ORBIT_CLASSES } from "../data/satellites";
+import type { WebcamSource } from "../data/webcams";
+import type { AircraftStatus } from "../render/aircraft";
 import type { Manifest, RasterEntry } from "../data/manifest";
 import { allBoundaryClasses, type PlateModel } from "../data/plates";
 import { getRamp } from "../lib/ramps";
-import { DEPTH_STOPS, MAX_DEPTH, type AppState, type OverlayId, type Store } from "../state";
+import { DEPTH_STOPS, LIVE_OVERLAYS, MAX_DEPTH, type AppState, type OverlayId, type Store } from "../state";
 import { $, h } from "./dom";
 
 /** Opacity of each depth stop's layer for a slider position; at most two are non-zero. */
@@ -23,7 +26,17 @@ const OVERLAY_LABELS: Record<OverlayId, { label: string; hint: string }> = {
   boundaries: { label: "Plate boundaries", hint: "Bird (2003) PB2002" },
   coastlines: { label: "Coastlines", hint: "Natural Earth" },
   live: { label: "Live survey conditions", hint: "NOAA planetary Kp" },
+  satellites: { label: "Satellites", hint: "About 16,000 active, moving live" },
+  aircraft: { label: "Aircraft", hint: "Live flights near the view" },
+  webcams: { label: "Traffic cameras", hint: "Live images, California and New York" },
 };
+
+/** What the legend needs to know about the live layers. */
+export interface LiveLegend {
+  satellites: { count: number; updated: string } | null;
+  aircraft: AircraftStatus;
+  webcams: { count: number; sources: WebcamSource[] } | null;
+}
 
 export function setupControls(store: Store, available: Set<OverlayId>) {
   // Depth radios mirror the slider stops.
@@ -35,12 +48,16 @@ export function setupControls(store: Store, available: Set<OverlayId>) {
   });
 
   const checks = $("overlay-checks");
+  const liveChecks = $("live-checks");
   for (const id of Object.keys(OVERLAY_LABELS) as OverlayId[]) {
-    if (!available.has(id)) continue;
-    const input = h("input", { type: "checkbox", value: id });
+    const isLive = LIVE_OVERLAYS.includes(id);
+    // Live layers are always listed; one without its data source is shown switched off.
+    if (!available.has(id) && !isLive) continue;
+    const input = h("input", { type: "checkbox", value: id, disabled: !available.has(id) });
     input.addEventListener("change", () => store.toggleOverlay(id, input.checked));
     const { label, hint } = OVERLAY_LABELS[id];
-    checks.append(h("label", { class: "check" }, input, h("span", null, label, h("small", null, hint))));
+    const note = available.has(id) ? hint : "Needs the Beneath live proxy";
+    (isLive ? liveChecks : checks).append(h("label", { class: "check" }, input, h("span", null, label, h("small", null, note))));
   }
 
   const slider = $("depth-slider") as HTMLInputElement;
@@ -77,7 +94,9 @@ export function setupControls(store: Store, available: Set<OverlayId>) {
     slider.setAttribute("aria-valuetext", DEPTH_STOPS[stop]);
     radios.querySelectorAll<HTMLInputElement>("input").forEach((r) => (r.checked = Math.abs(Number(r.value) - s.depth) < 0.01));
     stops.querySelectorAll<HTMLElement>("span").forEach((sp) => sp.classList.toggle("on", Number(sp.dataset.stop) === stop));
-    checks.querySelectorAll<HTMLInputElement>("input").forEach((c) => (c.checked = s.overlays.has(c.value as OverlayId)));
+    for (const group of [checks, liveChecks]) {
+      group.querySelectorAll<HTMLInputElement>("input").forEach((c) => (c.checked = s.overlays.has(c.value as OverlayId)));
+    }
     ramp.value = s.ramp;
     relief.checked = s.relief;
   };
@@ -115,6 +134,7 @@ export function renderLegend(
   rasters: Record<string, RasterEntry | undefined>,
   plates: PlateModel | null,
   quakes: QuakeIndex | null,
+  live: LiveLegend,
 ) {
   const w = depthWeights(s.depth);
   const items: HTMLElement[] = [];
@@ -176,6 +196,41 @@ export function renderLegend(
       ),
     );
   }
+  if (s.overlays.has("satellites") && live.satellites) {
+    items.push(
+      h(
+        "div",
+        { class: "legend-item" },
+        h("div", { class: "legend-title" }, h("span", null, "Satellites"), h("span", null, live.satellites.count.toLocaleString())),
+        h("div", { class: "legend-keys" }, ORBIT_CLASSES.map((c) => h("span", null, h("i", { style: `background:${c.colour}` }), c.label))),
+        h("div", { class: "legend-source" }, `Orbits from CelesTrak, ${live.satellites.updated.slice(0, 10)} · positions computed live`),
+      ),
+    );
+  }
+  if (s.overlays.has("aircraft")) {
+    const a = live.aircraft;
+    const status =
+      a.state === "ok" ? `${a.count} in view` : a.state === "zoom" ? "zoom in closer" : a.state === "error" ? "feed unavailable" : "";
+    items.push(
+      h(
+        "div",
+        { class: "legend-item" },
+        h("div", { class: "legend-title" }, h("span", null, "Aircraft"), h("span", null, status)),
+        h("div", { class: "legend-keys" }, h("span", null, h("i", { style: "background:#ffd166" }), "Flying"), h("span", null, h("i", { style: "background:#9aa6bd" }), "On the ground")),
+        h("div", { class: "legend-source" }, "adsb.lol community receivers · ODbL · refreshed every 10 s"),
+      ),
+    );
+  }
+  if (s.overlays.has("webcams") && live.webcams) {
+    items.push(
+      h(
+        "div",
+        { class: "legend-item" },
+        h("div", { class: "legend-title" }, h("span", null, "Traffic cameras"), h("span", null, `${live.webcams.count.toLocaleString()} · zoom in`)),
+        h("div", { class: "legend-source" }, live.webcams.sources.map((x) => x.name).join(" · ")),
+      ),
+    );
+  }
   $("legend").replaceChildren(...items);
 }
 
@@ -191,6 +246,30 @@ export function renderSources(manifest: Manifest) {
     ),
   );
   list.push(
+    h(
+      "div",
+      null,
+      h("strong", null, "Satellites"),
+      h("span", null, "Orbital elements from CelesTrak, refreshed daily; positions computed in the browser with SGP4"),
+    ),
+    h(
+      "div",
+      null,
+      h("strong", null, "Aircraft"),
+      h("span", null, "adsb.lol community ADS-B network · Open Database License (ODbL) 1.0"),
+    ),
+    h(
+      "div",
+      null,
+      h("strong", null, "Traffic cameras"),
+      h("span", null, "Caltrans and 511NY public traffic cameras; images belong to each agency"),
+    ),
+    h(
+      "div",
+      null,
+      h("strong", null, "US close-up imagery"),
+      h("span", null, "USGS The National Map: Orthoimagery · Public domain"),
+    ),
     h(
       "div",
       null,

@@ -7,6 +7,8 @@
 | App | GitHub Pages on `beneath.akanjilal.dev` (Cloudflare DNS-only CNAME to `akanjilal-work.github.io`) | | Free |
 | Tiles and JSON | GitHub Pages, same origin as the app, copied in from a GitHub Release at deploy time | Cloudflare R2 public bucket on `data.beneath.akanjilal.dev` | Free |
 | Live Kp | Browser reads NOAA SWPC directly (CORS allowed) | Cloudflare Worker cron writing `live/kp.json` to R2 | Free |
+| Satellite orbits, camera lists | Snapshot written into the Pages artifact by `Deploy app` (daily schedule plus every deploy) | | Free |
+| Live aircraft | Cloudflare Worker `/aircraft`, proxying adsb.lol | | Free tier |
 | Pipeline | Local machine | Manual GitHub Action | Free |
 
 ## Why tiles are served from Pages for now
@@ -41,10 +43,16 @@ Binary tiles never enter git history. They live as assets on a GitHub Release (`
 
 Old files stay on their old release, so rolling back is changing `DATA_RELEASE` back.
 
-### Worker (optional)
+### Worker (needed for live aircraft)
 
-1. `wrangler deploy` from `worker/`, or push to `main` with the `CLOUDFLARE_API_TOKEN` secret set.
-2. R2 binding configured in `wrangler.toml`, no credentials in the repo.
+The aircraft layer reads the Worker, because the free ADS-B feeds do not allow browsers to read them directly. Until the Worker is deployed the layer is listed as unavailable; everything else works without it.
+
+1. Create a free Cloudflare account. In **R2**, create the bucket `beneath-data` (the Kp feed stores its file there).
+2. Create an API token with **Workers Scripts: Edit** and **Workers R2 Storage: Edit**, and note the account ID.
+3. Add repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, then run **Deploy worker** (or push a change under `worker/`).
+4. Set the repository variable `VITE_LIVE_PROXY_URL` to the Worker URL (for example `https://beneath-live.<account>.workers.dev`) and run **Deploy app**.
+
+The R2 binding is configured in `wrangler.toml`; no credentials live in the repo.
 
 ## Moving tiles to R2
 

@@ -4,8 +4,10 @@
 
 import type { RampId } from "./lib/ramps";
 
-export type OverlayId = "quakes" | "deposits" | "boundaries" | "coastlines" | "live";
-export const OVERLAYS: OverlayId[] = ["quakes", "deposits", "boundaries", "coastlines", "live"];
+export type OverlayId = "quakes" | "deposits" | "boundaries" | "coastlines" | "live" | "satellites" | "aircraft" | "webcams";
+export const OVERLAYS: OverlayId[] = ["quakes", "deposits", "boundaries", "coastlines", "live", "satellites", "aircraft", "webcams"];
+/** Overlays listed in the "Live above the surface" group of the layers panel. */
+export const LIVE_OVERLAYS: OverlayId[] = ["satellites", "aircraft", "webcams"];
 
 export interface SectionState {
   a: { lat: number; lon: number };
