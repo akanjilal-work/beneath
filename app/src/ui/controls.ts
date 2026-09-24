@@ -95,7 +95,7 @@ export function setupControls(store: Store, available: Set<OverlayId>) {
     radios.querySelectorAll<HTMLInputElement>("input").forEach((r) => (r.checked = Math.abs(Number(r.value) - s.depth) < 0.01));
     stops.querySelectorAll<HTMLElement>("span").forEach((sp) => sp.classList.toggle("on", Number(sp.dataset.stop) === stop));
     for (const group of [checks, liveChecks]) {
-      group.querySelectorAll<HTMLInputElement>("input").forEach((c) => (c.checked = s.overlays.has(c.value as OverlayId)));
+      group.querySelectorAll<HTMLInputElement>("input").forEach((c) => (c.checked = !c.disabled && s.overlays.has(c.value as OverlayId)));
     }
     ramp.value = s.ramp;
     relief.checked = s.relief;
@@ -207,7 +207,8 @@ export function renderLegend(
       ),
     );
   }
-  if (s.overlays.has("aircraft")) {
+  // "off" means not polling: switched off, or the live proxy is not configured.
+  if (s.overlays.has("aircraft") && live.aircraft.state !== "off") {
     const a = live.aircraft;
     const status =
       a.state === "ok" ? `${a.count} in view` : a.state === "zoom" ? "zoom in closer" : a.state === "error" ? "feed unavailable" : "";
