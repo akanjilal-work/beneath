@@ -60,8 +60,17 @@ export function summariseKp(series: KpSeries, now = Date.now()): KpSummary | nul
   return { kp, time: last.time, stale, level: "storm", label: `Storm (G${Math.min(5, Math.floor(kp) - 4)})`, advice: "Geomagnetic storm. Magnetic surveys usually stop; aurora likely at high latitudes." };
 }
 
-export async function fetchKp(url: string): Promise<KpSeries> {
-  const res = await fetch(url, { cache: "no-cache" });
-  if (!res.ok) throw new Error(`Kp feed returned ${res.status}`);
-  return normaliseKp(await res.json());
+/** Try each source in order (NOAA first, then the Worker's copy) and return the first that works. */
+export async function fetchKp(urls: string[]): Promise<KpSeries> {
+  let last: unknown = new Error("No Kp source configured");
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { cache: "no-cache" });
+      if (!res.ok) throw new Error(`Kp feed returned ${res.status}`);
+      return normaliseKp(await res.json());
+    } catch (err) {
+      last = err;
+    }
+  }
+  throw last;
 }

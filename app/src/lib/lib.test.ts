@@ -1,6 +1,6 @@
 import { deflateSync } from "node:zlib";
-import { describe, expect, it } from "vitest";
-import { normaliseKp, summariseKp } from "../data/live";
+import { describe, expect, it, vi } from "vitest";
+import { fetchKp, normaliseKp, summariseKp } from "../data/live";
 import { boundaryClass } from "../data/plates";
 import { advance, aircraftFromFile } from "../data/aircraft";
 import { QuakeIndex, depthColour, magnitudePixels, quakesFromFeed, quakesFromFile } from "../data/quakes";
@@ -371,5 +371,23 @@ describe("aircraft and cameras", () => {
     });
     expect(cams.map((c) => c.name)).toEqual(["A"]);
     expect(freshImage(cams[0], 120_000)).toBe("https://cam/a.jpg?t=2");
+  });
+});
+
+describe("Kp sources", () => {
+  it("falls back to the Worker copy when NOAA fails", async () => {
+    const worker = { updated: "2026-09-24T17:15:00Z", source: "NOAA SWPC", points: [{ time: "2026-09-24T15:00:00Z", kp: 3.7 }] };
+    const fetchMock = vi.fn(async (url: string) =>
+      url.includes("swpc") ? new Response("down", { status: 503 }) : new Response(JSON.stringify(worker), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      const series = await fetchKp(["https://services.swpc.noaa.gov/kp.json", "https://worker.example/live/kp.json"]);
+      expect(series.points).toEqual(worker.points);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      await expect(fetchKp(["https://services.swpc.noaa.gov/kp.json"])).rejects.toThrow("503");
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
