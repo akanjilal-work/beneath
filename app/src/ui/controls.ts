@@ -302,8 +302,8 @@ export function renderSources(manifest: Manifest) {
     h(
       "div",
       null,
-      h("strong", null, "US close-up imagery"),
-      h("span", null, "USGS The National Map: Orthoimagery · Public domain"),
+      h("strong", null, "Close-up imagery"),
+      h("span", null, "Esri World Imagery (Esri, Maxar, Earthstar Geographics, and the GIS User Community), used under Esri's terms; without it, USGS The National Map orthoimagery over the US (public domain)"),
     ),
     h(
       "div",

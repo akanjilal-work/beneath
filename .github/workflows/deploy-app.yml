@@ -42,6 +42,7 @@ jobs:
           VITE_DATA_BASE_URL: ${{ vars.VITE_DATA_BASE_URL }}
           VITE_LIVE_KP_URL: ${{ vars.VITE_LIVE_KP_URL }}
           VITE_LIVE_PROXY_URL: ${{ vars.VITE_LIVE_PROXY_URL }}
+          VITE_IMAGERY_KEY: ${{ vars.VITE_IMAGERY_KEY }}
       - name: Bundle data from release
         # Skipped when tiles are served from R2 (VITE_DATA_BASE_URL set).
         if: ${{ vars.VITE_DATA_BASE_URL == '' }}

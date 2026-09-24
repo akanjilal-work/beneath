@@ -36,7 +36,15 @@ import {
   type PointPrimitive,
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
-import { IMAGERY_CREDIT, IMAGERY_MAX_LEVEL, IMAGERY_URL, US_IMAGERY_BOXES, US_IMAGERY_CREDIT, US_IMAGERY_MAX_LEVEL, US_IMAGERY_URL } from "../config";
+import {
+  HIRES_IMAGERY_CREDIT,
+  HIRES_IMAGERY_KEY,
+  HIRES_IMAGERY_MAX_LEVEL,
+  HIRES_IMAGERY_URL,
+  IMAGERY_CREDIT,
+  IMAGERY_MAX_LEVEL,
+  IMAGERY_URL,
+  US_IMAGERY_BOXES, US_IMAGERY_CREDIT, US_IMAGERY_MAX_LEVEL, US_IMAGERY_URL } from "../config";
 import type { Deposit } from "../data/deposits";
 import type { PlateModel } from "../data/plates";
 import type { Quake } from "../data/quakes";
@@ -173,7 +181,18 @@ export async function createGlobe(container: HTMLElement, creditContainer: HTMLE
   );
   // About 1 m imagery over the US, for close-up views only. From regional heights Sentinel-2 alone
   // looks cleaner: the two sources photograph water in different tones, which reads as a patchwork.
-  for (const [w, s, e, n] of US_IMAGERY_BOXES) {
+  // With an Esri key, sharp imagery everywhere replaces the US-only layer. It starts at regional
+  // zoom, so the far views (most of the tile traffic) stay on free Sentinel-2 and the key's
+  // monthly tile allowance goes to close-ups.
+  if (HIRES_IMAGERY_KEY) {
+    const hires = new UrlTemplateImageryProvider({
+      url: `${HIRES_IMAGERY_URL}?token=${encodeURIComponent(HIRES_IMAGERY_KEY)}`,
+      maximumLevel: HIRES_IMAGERY_MAX_LEVEL,
+      credit: new Credit(HIRES_IMAGERY_CREDIT, true),
+    });
+    viewer.imageryLayers.add(new ImageryLayer(hires, { minimumTerrainLevel: 8 }));
+  }
+  for (const [w, s, e, n] of HIRES_IMAGERY_KEY ? [] : US_IMAGERY_BOXES) {
     const provider = new NoDataImageryProvider({
       url: US_IMAGERY_URL,
       maximumLevel: US_IMAGERY_MAX_LEVEL,

@@ -23,7 +23,8 @@ Every layer must pass a licence check before it ships. Record the result here an
 | Aircraft | adsb.lol community ADS-B network (adsb.fi as a fallback), read through the Beneath Worker | Live positions around the view, every 10 s | adsb.lol: Open Database License (ODbL) 1.0; adsb.fi: free open data for non-commercial use | "adsb.lol" or "adsb.fi" |
 | Traffic cameras | Caltrans CCTV status feeds, 511NY and Ontario 511 camera lists, snapshot daily (the Ontario key stays in the build); images load live from each agency | About 6,200 cameras | Public agency data; images belong to each agency | "Caltrans", "511NY", "Ontario 511" |
 | Webcams worldwide | Windy Webcams API v3: the 1,000 most popular in the daily snapshot, plus up to 200 near the view through the Worker (key held as a secret, cached 10 minutes) | Copies of traffic cameras dropped | Windy free tier; attribution with a link required | "Webcams provided by windy.com" |
-| US close-up imagery | USGS The National Map orthoimagery (NAIP and high-resolution orthos) | About 1 m, US only, close-up views | Public domain (US Government) | "USGS The National Map" |
+| Close-up imagery (worldwide) | Esri World Imagery through an ArcGIS Location Platform key (`VITE_IMAGERY_KEY`, restricted to the site by referrer), from regional zoom down | About 0.3 to 1 m, most of the world | Esri terms; free tier 2 million tiles a month; "Powered by Esri" attribution required | "Esri, Maxar, Earthstar Geographics, and the GIS User Community" |
+| US close-up imagery (fallback without the Esri key) | USGS The National Map orthoimagery (NAIP and high-resolution orthos) | About 1 m, US only, close-up views | Public domain (US Government) | "USGS The National Map" |
 | Live Kp index | NOAA Space Weather Prediction Center, planetary K-index JSON | 3-hourly | Public domain (US Government) | "NOAA SWPC" |
 
 Sources, checksums and download dates are in `pipeline/sources/manifest.json`.

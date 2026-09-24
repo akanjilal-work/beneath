@@ -44,6 +44,16 @@ export const IMAGERY_MAX_LEVEL = 15;
 // Sharper imagery over the United States: USGS The National Map orthoimagery (NAIP and
 // high-resolution orthos, public domain), about 1 m per pixel. The service has no tiles
 // outside the US, so it is only requested inside these boxes (west, south, east, north).
+// Sharp imagery worldwide for regional and close-up views: Esri World Imagery (Maxar and others,
+// about 0.3 to 1 m), through an ArcGIS Location Platform key. The key is public by design (it is
+// restricted to this site's address in the ArcGIS dashboard). Without it, close-ups fall back to
+// Sentinel-2 plus the USGS imagery over the US below.
+export const HIRES_IMAGERY_KEY: string = env.VITE_IMAGERY_KEY || "";
+export const HIRES_IMAGERY_URL = "https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+export const HIRES_IMAGERY_MAX_LEVEL = 19;
+export const HIRES_IMAGERY_CREDIT =
+  'Powered by <a href="https://www.esri.com/" target="_blank" rel="noopener">Esri</a> · Imagery: Esri, Maxar, Earthstar Geographics, and the GIS User Community';
+
 export const US_IMAGERY_URL = "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}";
 export const US_IMAGERY_MAX_LEVEL = 18;
 export const US_IMAGERY_BOXES: [number, number, number, number][] = [

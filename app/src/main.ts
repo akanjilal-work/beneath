@@ -2,7 +2,7 @@ import "./styles.css";
 import { Cartesian2, Cartographic, Math as CesiumMath, type ImageryLayer } from "cesium";
 import { DepositIndex, type Deposit, type DepositsFile } from "./data/deposits";
 import { Gazetteer, placeLabel, type PlacesFile } from "./data/gazetteer";
-import { LIVE_SNAPSHOT_URL, US_IMAGERY_BOXES } from "./config";
+import { HIRES_IMAGERY_KEY, LIVE_SNAPSHOT_URL, US_IMAGERY_BOXES } from "./config";
 import type { Aircraft } from "./data/aircraft";
 import { fetchJson, findLayer, loadManifest, type Manifest, type RasterEntry } from "./data/manifest";
 import { PlateModel, type FeatureCollection } from "./data/plates";
@@ -402,7 +402,7 @@ async function main() {
     closeCard();
     const ground = await globe.groundHeight(lat, lon);
     // Closer where the 1 m US imagery exists; higher elsewhere, where 10 m imagery looks soft up close.
-    const sharp = US_IMAGERY_BOXES.some(([w, s, e, n]) => lon >= w && lon <= e && lat >= s && lat <= n);
+    const sharp = Boolean(HIRES_IMAGERY_KEY) || US_IMAGERY_BOXES.some(([w, s, e, n]) => lon >= w && lon <= e && lat >= s && lat <= n);
     surface.enter(lat, lon, ground, sharp ? 1200 : 3000);
   };
 
