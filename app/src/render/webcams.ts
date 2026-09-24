@@ -1,30 +1,40 @@
-import { Cartesian3, Color, NearFarScalar, PointPrimitiveCollection, type Scene } from "cesium";
+import { BillboardCollection, Cartesian3, NearFarScalar, VerticalOrigin, type Scene } from "cesium";
 import { LIVE_PROXY_URL } from "../config";
 import { windyCamsFromFile, type Webcam, type WindyFile } from "../data/webcams";
 
 /** Below this camera height, extra webcams near the view are loaded from Windy through the Worker. */
 export const WEBCAM_MAX_VIEW_M = 1_200_000;
 // Visible at every height, shrinking from space so clusters read as coverage rather than noise.
-const SCALE = new NearFarScalar(2e4, 1.5, 2e7, 0.4);
+const SCALE = new NearFarScalar(2e4, 1.2, 2e7, 0.45);
 
-const TRAFFIC = Color.fromCssColorString("#34d399");
-const WINDY = Color.fromCssColorString("#60a5fa");
+/** A CCTV camera on a wall mount, in the given colour: green for traffic cameras, blue for webcams. */
+export function cameraIcon(colour: string): string {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><g stroke-linejoin="round" stroke-linecap="round">' +
+    '<path d="M13 18v5H6" fill="none" stroke="#0b1220" stroke-width="4.5"/><path d="M13 18v5H6" fill="none" stroke="#fff" stroke-width="2"/>' +
+    `<rect x="3" y="19" width="4" height="10" rx="1.2" fill="${colour}" stroke="#0b1220" stroke-width="1.5"/>` +
+    `<g transform="rotate(20 15 11)"><rect x="3" y="6" width="20" height="10" rx="2.5" fill="${colour}" stroke="#0b1220" stroke-width="1.6"/>` +
+    `<path d="M23 8.5l6-2v9l-6-2z" fill="${colour}" stroke="#0b1220" stroke-width="1.6"/><circle cx="8" cy="11" r="1.6" fill="#0b1220"/></g></g></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+export const TRAFFIC_ICON = cameraIcon("#34d399");
+export const WEBCAM_ICON = cameraIcon("#60a5fa");
 
 /** Rounded position key: two cameras within about 100 m count as the same camera. */
 const spot = (lon: number, lat: number) => `${Math.round(lon * 1000)},${Math.round(lat * 1000)}`;
 
 export class WebcamLayer {
   private readonly scene: Scene;
-  private readonly points: PointPrimitiveCollection;
-  private readonly nearby: PointPrimitiveCollection;
+  private readonly points: BillboardCollection;
+  private readonly nearby: BillboardCollection;
   private known = new Set<string>();
   private windyArea = "";
   private windyCount = 0;
 
   constructor(scene: Scene) {
     this.scene = scene;
-    this.points = scene.primitives.add(new PointPrimitiveCollection()) as PointPrimitiveCollection;
-    this.nearby = scene.primitives.add(new PointPrimitiveCollection()) as PointPrimitiveCollection;
+    this.points = scene.primitives.add(new BillboardCollection({ scene })) as BillboardCollection;
+    this.nearby = scene.primitives.add(new BillboardCollection({ scene })) as BillboardCollection;
     this.points.show = false;
     this.nearby.show = false;
   }
@@ -33,13 +43,13 @@ export class WebcamLayer {
     return this.windyCount;
   }
 
-  private addTo(collection: PointPrimitiveCollection, cam: Webcam, colour: Color) {
+  private addTo(collection: BillboardCollection, cam: Webcam, icon: string) {
     collection.add({
       position: Cartesian3.fromDegrees(cam.lon, cam.lat, 30),
-      color: colour,
-      pixelSize: 7,
-      outlineColor: Color.WHITE,
-      outlineWidth: 1.5,
+      image: icon,
+      width: 22,
+      height: 22,
+      verticalOrigin: VerticalOrigin.CENTER,
       scaleByDistance: SCALE,
       id: cam,
     });
@@ -62,7 +72,7 @@ export class WebcamLayer {
     const cams = windyCamsFromFile((await res.json()) as WindyFile, 1_000_000).filter((c) => !this.known.has(spot(c.lon, c.lat)));
     this.windyArea = area;
     this.nearby.removeAll();
-    for (const cam of cams) this.addTo(this.nearby, cam, WINDY);
+    for (const cam of cams) this.addTo(this.nearby, cam, WEBCAM_ICON);
     this.windyCount = cams.length;
     this.scene.requestRender();
     return cams.length;
@@ -71,7 +81,7 @@ export class WebcamLayer {
   setWebcams(cams: Webcam[]) {
     this.points.removeAll();
     this.known = new Set(cams.map((c) => spot(c.lon, c.lat)));
-    for (const cam of cams) this.addTo(this.points, cam, cam.source.id === "windy" ? WINDY : TRAFFIC);
+    for (const cam of cams) this.addTo(this.points, cam, cam.source.id === "windy" ? WEBCAM_ICON : TRAFFIC_ICON);
     this.scene.requestRender();
   }
 

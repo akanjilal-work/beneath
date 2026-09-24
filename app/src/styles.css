@@ -663,6 +663,11 @@ details.why p {
   display: inline-block;
   flex: none;
 }
+.legend-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
 .legend-keys i.line {
   width: 14px;
   height: 3px;

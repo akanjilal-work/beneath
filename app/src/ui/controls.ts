@@ -3,6 +3,7 @@ import { DEPTH_GRADIENT, type QuakeIndex } from "../data/quakes";
 import { ORBIT_CLASSES } from "../data/satellites";
 import type { WebcamSource } from "../data/webcams";
 import type { AircraftStatus } from "../render/aircraft";
+import { TRAFFIC_ICON, WEBCAM_ICON } from "../render/webcams";
 import type { Manifest, RasterEntry } from "../data/manifest";
 import { allBoundaryClasses, type PlateModel } from "../data/plates";
 import { getRamp } from "../lib/ramps";
@@ -243,8 +244,8 @@ export function renderLegend(
         h(
           "div",
           { class: "legend-keys" },
-          h("span", null, h("i", { style: "background:#34d399" }), `Traffic (${live.webcams.count.toLocaleString()})`),
-          h("span", null, h("i", { style: "background:#60a5fa" }), `Webcams (${(live.webcams.windy + live.webcams.nearby).toLocaleString()})`),
+          h("span", null, h("img", { class: "legend-icon", src: TRAFFIC_ICON, alt: "" }), `Traffic cameras (${live.webcams.count.toLocaleString()})`),
+          h("span", null, h("img", { class: "legend-icon", src: WEBCAM_ICON, alt: "" }), `Webcams (${(live.webcams.windy + live.webcams.nearby).toLocaleString()})`),
         ),
         h(
           "div",
