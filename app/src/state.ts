@@ -1,10 +1,19 @@
 // A single small store, serialised to and from the URL hash so any view can be shared.
 // Example: #lat=43.55&lon=-80.25&alt=900000&d=1&layers=deposits,boundaries&ramp=diverging&pick=43.55,-80.25
+// A cross-section adds xs=latA,lonA,latB,lonB&xw=100, and see-beneath mode adds xray=1.
 
 import type { RampId } from "./lib/ramps";
 
-export type OverlayId = "deposits" | "boundaries" | "coastlines" | "live";
-export const OVERLAYS: OverlayId[] = ["deposits", "boundaries", "coastlines", "live"];
+export type OverlayId = "quakes" | "deposits" | "boundaries" | "coastlines" | "live";
+export const OVERLAYS: OverlayId[] = ["quakes", "deposits", "boundaries", "coastlines", "live"];
+
+export interface SectionState {
+  a: { lat: number; lon: number };
+  b: { lat: number; lon: number };
+  /** Half-width of the swath of earthquakes projected onto the section, km. */
+  w: number;
+}
+export const SECTION_WIDTHS = [25, 50, 100, 200, 300];
 
 export interface AppState {
   lat: number;
@@ -18,6 +27,9 @@ export interface AppState {
   mode: "3d" | "2d";
   theme: "dark" | "light";
   pick: { lat: number; lon: number } | null;
+  /** See beneath: the surface turns translucent so earthquakes show at their true depth. */
+  xray: boolean;
+  section: SectionState | null;
 }
 
 export const DEPTH_STOPS = ["Surface", "Magnetic", "Gravity", "Plates"] as const;
@@ -28,12 +40,14 @@ const DEFAULTS: AppState = {
   lon: -40,
   alt: 20_000_000,
   depth: 1,
-  overlays: new Set<OverlayId>(["boundaries", "coastlines", "live"]),
+  overlays: new Set<OverlayId>(["quakes", "boundaries", "coastlines", "live"]),
   ramp: "diverging",
   relief: true,
   mode: "3d",
   theme: "dark",
   pick: null,
+  xray: false,
+  section: null,
 };
 
 // Older links used layers=mag / grav / plates for the raster; map them to a depth stop.
@@ -75,6 +89,14 @@ export function parseHash(hash: string): { state: AppState; hadView: boolean } {
     const [a, b] = pick.split(",").map(Number);
     if (Number.isFinite(a) && Number.isFinite(b) && Math.abs(a) <= 90 && Math.abs(b) <= 180) s.pick = { lat: a, lon: b };
   }
+  if (p.get("xray") === "1") s.xray = true;
+  const xs = (p.get("xs") ?? "").split(",").map(Number);
+  if (xs.length === 4 && xs.every(Number.isFinite) && Math.abs(xs[0]) <= 90 && Math.abs(xs[2]) <= 90 && Math.abs(xs[1]) <= 180 && Math.abs(xs[3]) <= 180) {
+    // Snap to an offered width so the swath menu always shows what is drawn.
+    const want = num(p.get("xw"), 0, 10_000) ?? 100;
+    const w = SECTION_WIDTHS.reduce((best, v) => (Math.abs(v - want) < Math.abs(best - want) ? v : best));
+    s.section = { a: { lat: xs[0], lon: xs[1] }, b: { lat: xs[2], lon: xs[3] }, w };
+  }
   return { state: s, hadView: lat !== null && lon !== null };
 }
 
@@ -91,6 +113,11 @@ export function toHash(s: AppState): string {
   if (s.mode === "2d") parts.push("mode=2d");
   if (s.theme === "light") parts.push("theme=light");
   if (s.pick) parts.push(`pick=${s.pick.lat.toFixed(4)},${s.pick.lon.toFixed(4)}`);
+  if (s.xray) parts.push("xray=1");
+  if (s.section) {
+    const { a, b, w } = s.section;
+    parts.push(`xs=${[a.lat, a.lon, b.lat, b.lon].map((v) => v.toFixed(3)).join(",")}`, `xw=${w}`);
+  }
   return `#${parts.join("&")}`;
 }
 

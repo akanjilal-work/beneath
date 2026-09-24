@@ -30,6 +30,8 @@ export interface TerrainRequest {
   id: number;
   url: string;
   size: number;
+  /** Keep heights below sea level (for profiles); the 3D globe holds oceans at sea level. */
+  seaFloor?: boolean;
 }
 
 export type WorkerRequest = DecodeRequest | ColouriseRequest | TerrainRequest;
@@ -116,7 +118,7 @@ async function terrain(req: TerrainRequest): Promise<Float32Array | null> {
         (src[y1 * w + x0] * (1 - tx) + src[y1 * w + x1] * tx) * ty;
       // The source includes bathymetry. Sea floor under an imagery-coloured sea looks wrong,
       // so oceans are held at sea level (this also flattens the few land areas below it).
-      out[r * n + c] = Math.max(0, h);
+      out[r * n + c] = req.seaFloor ? h : Math.max(0, h);
     }
   }
   return out;

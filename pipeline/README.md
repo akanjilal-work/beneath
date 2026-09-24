@@ -20,7 +20,7 @@ does the spherical-harmonic synthesis.
 
 ```sh
 .venv/bin/python -m beneath_pipeline build all        # everything + layers.json (about 2 min on 10 cores, plus downloads)
-.venv/bin/python -m beneath_pipeline build magnetic   # one layer (magnetic|gravity|plates|deposits|places|coastlines), rewrites layers.json
+.venv/bin/python -m beneath_pipeline build magnetic   # one layer (magnetic|gravity|plates|deposits|earthquakes|places|coastlines), rewrites layers.json
 .venv/bin/python -m beneath_pipeline build gravity --force   # recompute the cached EGM2008 grid
 .venv/bin/python -m beneath_pipeline build manifest   # only rewrite layers.json
 .venv/bin/python -m beneath_pipeline verify           # check outputs against the sources
@@ -47,7 +47,7 @@ beneath_pipeline/
   tiles.py        geographic tile math + PMTiles addressing, grid sampling (bilinear, antimeridian wrap), pyramid, PNG + PMTiles writing
   manifest.py     layer entries, layers.json
   verify.py       output checks
-  layers/         one module per dataset (magnetic, gravity, plates, deposits, places)
+  layers/         one module per dataset (magnetic, gravity, plates, deposits, earthquakes, places, coastlines)
 configs/          one JSON per dataset (source URL, units, scale, maxzoom, licence, attribution) + build.json
 tests/            encode/decode round trip, tile math and addressing, interpolation/wrap, pyramid means
 ```
@@ -62,9 +62,10 @@ tests/            encode/decode round trip, tile math and addressing, interpolat
 | `plates.v1.geojson` | 0.37 MB | 1,683 boundary lines |
 | `plate-polygons.v1.geojson` | 0.21 MB | 52 plates |
 | `deposits.v1.json` | 12.4 MB (3.74 MB gzipped) | 200,834 points |
+| `earthquakes.v1.json` | 2.4 MB (0.82 MB gzipped) | 91,625 events, M5+ since 1970, with depth |
 | `places.v1.json` | 2.0 MB | 34,146 places |
 | `coastlines.v1.geojson` | 1.0 MB | 1,429 lines, Natural Earth 1:50m |
-| **Total** | **252.2 MB** | budget 450 MB |
+| **Total** | **254.6 MB** | budget 450 MB |
 
 PNG bytes per geographic level (PMTiles zoom = level + 1):
 

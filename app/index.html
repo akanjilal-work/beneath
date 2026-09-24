@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Beneath</title>
-    <meta name="description" content="An explorable 3D globe of what lies under the Earth's surface: magnetic anomalies, gravity, mineral deposits and tectonic plates." />
+    <meta name="description" content="An explorable 3D globe of what lies under the Earth's surface: earthquakes at their true depth, cross-sections, magnetic anomalies, gravity, mineral deposits and tectonic plates." />
     <meta name="theme-color" content="#05080f" />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <meta property="og:type" content="website" />
@@ -46,6 +46,10 @@
           <span class="kp-dot" aria-hidden="true"></span>
           <span class="kp-text">Survey conditions</span>
         </button>
+        <button id="section-button" class="icon-button tool-button" type="button" aria-label="Draw a cross-section" title="Draw a cross-section (C)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7l18-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /><path d="M3 7v12l18-3V4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" opacity=".7" /><circle cx="9" cy="12" r="1.6" fill="currentColor" /><circle cx="14" cy="14" r="1.6" fill="currentColor" /></svg>
+          <span>Section</span>
+        </button>
         <div class="segmented" role="group" aria-label="View mode">
           <button type="button" data-mode="2d" aria-pressed="false">2D</button>
           <button type="button" data-mode="3d" aria-pressed="true">3D</button>
@@ -69,6 +73,10 @@
           <fieldset class="layer-group">
             <legend>Beneath the surface</legend>
             <div id="depth-radios" class="radio-list"></div>
+            <label class="check xray-check">
+              <input id="xray-toggle" type="checkbox" />
+              <span>See beneath<small>Quakes at true depth · X</small></span>
+            </label>
           </fieldset>
           <fieldset class="layer-group">
             <legend>Overlays</legend>
@@ -96,6 +104,17 @@
         <button id="card-close" class="icon-button card-close" type="button" aria-label="Close">×</button>
         <div id="card-content"></div>
       </aside>
+
+      <div id="draw-hint" class="draw-hint" role="status" hidden>
+        <span id="draw-hint-text">Click where the section should start</span>
+        <button id="draw-cancel" class="button" type="button">Cancel</button>
+      </div>
+
+      <section id="section-panel" class="panel section-panel" aria-labelledby="section-title" hidden>
+        <button id="section-close" class="icon-button card-close" type="button" aria-label="Close the cross-section">×</button>
+        <div id="section-head" class="section-head"></div>
+        <div id="section-body" class="section-body"></div>
+      </section>
 
       <section id="surface-hud" class="surface-hud" aria-label="Surface view controls" hidden>
         <div class="hud-bar">
@@ -145,6 +164,15 @@
         Beneath is an explorable globe of what lies under the Earth's surface. Drag the <strong>depth slider</strong> to peel
         back the surface, then click or tap anywhere to read what the data says about that point.
       </p>
+      <p>
+        Turn on <strong>See beneath</strong> to make the surface translucent. Every magnitude 5 and larger earthquake since
+        1970 then sits at the depth where it started. Under Japan, the Andes or Tonga they form sheets that dive hundreds of
+        kilometres into the mantle, tracing plates as they sink. White rings are earthquakes from the past 7 days.
+      </p>
+      <p>
+        Draw a <strong>cross-section</strong> by clicking two points. Beneath the line you get the ground profile, the magnetic
+        and gravity readings, any plate boundaries it crosses, and every earthquake nearby plotted by depth.
+      </p>
       <p class="callout">
         This site is educational. It is not an exploration, engineering or investment tool. Data resolution is kilometres, not
         metres, and some datasets are decades old.
@@ -153,7 +181,9 @@
       <ul class="keys">
         <li><kbd>/</kbd> search</li>
         <li><kbd>[</kbd> and <kbd>]</kbd> move the depth slider</li>
-        <li><kbd>Esc</kbd> close the card or dialog, or leave surface view</li>
+        <li><kbd>X</kbd> see beneath (earthquakes at true depth)</li>
+        <li><kbd>C</kbd> draw a cross-section</li>
+        <li><kbd>Esc</kbd> cancel drawing, close the card or dialog, or leave surface view</li>
         <li>In surface view: <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move, <kbd>E</kbd>/<kbd>Q</kbd> rise and descend, drag to look</li>
       </ul>
       <h3>Data and licences</h3>

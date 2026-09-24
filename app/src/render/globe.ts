@@ -1,6 +1,8 @@
 import {
   ArcType,
   buildModuleUrl,
+  Cartesian2,
+  CallbackProperty,
   Cartesian3,
   Cartographic,
   Color,
@@ -8,10 +10,14 @@ import {
   Credit,
   DistanceDisplayCondition,
   GeometryInstance,
+  HorizontalOrigin,
   ImageryLayer,
   Ion,
+  LabelCollection,
+  LabelStyle,
   Math as CesiumMath,
   NearFarScalar,
+  PerInstanceColorAppearance,
   PointPrimitiveCollection,
   PolylineColorAppearance,
   PolylineGeometry,
@@ -22,7 +28,9 @@ import {
   ScreenSpaceEventType,
   TileMapServiceImageryProvider,
   UrlTemplateImageryProvider,
+  VerticalOrigin,
   Viewer,
+  WallGeometry,
   sampleTerrain,
   type PointPrimitive,
 } from "cesium";
@@ -30,6 +38,7 @@ import "cesium/Build/Cesium/Widgets/widgets.css";
 import { IMAGERY_CREDIT, IMAGERY_MAX_LEVEL, IMAGERY_URL } from "../config";
 import type { Deposit } from "../data/deposits";
 import type { PlateModel } from "../data/plates";
+import type { Quake } from "../data/quakes";
 import { createTerrainProvider } from "./terrain";
 
 // No Cesium ion: base imagery is the Natural Earth II tiles shipped inside the Cesium package.
@@ -37,7 +46,9 @@ Ion.defaultAccessToken = "";
 
 export interface Globe {
   viewer: Viewer;
-  onPick(fn: (lon: number, lat: number, deposit: Deposit | null) => void): void;
+  onPick(fn: (lon: number, lat: number, deposit: Deposit | null, quake: Quake | null) => void): void;
+  /** Called with the ground point under the cursor while set; used to preview a section line. */
+  setHover(fn: ((lon: number, lat: number) => void) | null): void;
   onInteract(fn: () => void): void;
   onCameraIdle(fn: (lat: number, lon: number, alt: number) => void): void;
   flyTo(lat: number, lon: number, alt?: number, duration?: number): void;
@@ -54,6 +65,12 @@ export interface Globe {
   setPickMarker(lat: number, lon: number): void;
   clearPickMarker(): void;
   setMode(mode: "3d" | "2d"): void;
+  /** See beneath: make the surface translucent so points below it show at their true depth. */
+  setXray(on: boolean): void;
+  /** Draw a cross-section line with a curtain down to depthKm, or remove it (null). */
+  setSection(points: { lat: number; lon: number }[] | null, depthKm?: number): void;
+  /** Preview line while drawing a section (null to clear). */
+  setSectionPreview(a: { lat: number; lon: number } | null, b?: { lat: number; lon: number }): void;
   setAutoRotate(on: boolean): void;
   setTheme(theme: "dark" | "light"): void;
   /** Ground height in metres at a point, sampled from the terrain (0 if unavailable). */
@@ -238,21 +255,25 @@ export async function createGlobe(container: HTMLElement, creditContainer: HTMLE
 
   // --- interaction ---------------------------------------------------------------------
   const handler = new ScreenSpaceEventHandler(scene.canvas);
-  const pickListeners: ((lon: number, lat: number, d: Deposit | null) => void)[] = [];
+  const pickListeners: ((lon: number, lat: number, d: Deposit | null, q: Quake | null) => void)[] = [];
+  let hoverListener: ((lon: number, lat: number) => void) | null = null;
   const interactListeners: (() => void)[] = [];
   const idleListeners: ((lat: number, lon: number, alt: number) => void)[] = [];
 
   handler.setInputAction((e: ScreenSpaceEventHandler.PositionedEvent) => {
     const picked = scene.pick(e.position);
     let deposit: Deposit | null = null;
+    let quake: Quake | null = null;
     if (picked?.primitive && (picked.primitive as PointPrimitive).id && picked.collection === points) {
       deposit = (picked.primitive as PointPrimitive).id as Deposit;
+    } else if (picked?.id && typeof picked.id === "object" && "depthKm" in picked.id) {
+      quake = picked.id as Quake;
     }
     let lon: number;
     let lat: number;
-    if (deposit) {
-      lon = deposit.lon;
-      lat = deposit.lat;
+    if (deposit || quake) {
+      lon = (deposit ?? quake)!.lon;
+      lat = (deposit ?? quake)!.lat;
     } else {
       // Pick the terrain surface, not the ellipsoid, so tilted and ground-level views are exact.
       const ray = camera.getPickRay(e.position);
@@ -262,15 +283,39 @@ export async function createGlobe(container: HTMLElement, creditContainer: HTMLE
       lon = CesiumMath.toDegrees(c.longitude);
       lat = CesiumMath.toDegrees(c.latitude);
     }
-    for (const fn of pickListeners) fn(lon, lat, deposit);
+    for (const fn of pickListeners) fn(lon, lat, deposit, quake);
   }, ScreenSpaceEventType.LEFT_CLICK);
 
   // Pointer cursor over deposits.
   handler.setInputAction((e: ScreenSpaceEventHandler.MotionEvent) => {
-    if (!points.show || points.length === 0) return;
+    if (hoverListener) {
+      const cart = camera.pickEllipsoid(e.endPosition, scene.globe.ellipsoid);
+      if (cart) {
+        const c = Cartographic.fromCartesian(cart);
+        hoverListener(CesiumMath.toDegrees(c.longitude), CesiumMath.toDegrees(c.latitude));
+      }
+      scene.canvas.style.cursor = "crosshair";
+      return;
+    }
     const picked = scene.pick(e.endPosition);
-    scene.canvas.style.cursor = picked?.collection === points ? "pointer" : "";
+    const pickable = picked?.collection === points || (picked?.id && typeof picked.id === "object" && "depthKm" in picked.id);
+    scene.canvas.style.cursor = pickable ? "pointer" : "";
   }, ScreenSpaceEventType.MOUSE_MOVE);
+
+  // --- cross-section line, curtain and endpoint labels ---------------------------------
+  let sectionLine: Primitive | null = null;
+  let sectionWall: Primitive | null = null;
+  const sectionLabels = scene.primitives.add(new LabelCollection()) as LabelCollection;
+  let previewPositions: Cartesian3[] = [];
+  const preview = viewer.entities.add({
+    show: false,
+    polyline: {
+      positions: new CallbackProperty(() => previewPositions, false),
+      width: 2,
+      arcType: ArcType.GEODESIC,
+      material: Color.fromCssColorString("#ffd166"),
+    },
+  });
 
   const notifyInteract = () => interactListeners.forEach((fn) => fn());
   for (const type of ["pointerdown", "wheel", "touchstart", "keydown"]) {
@@ -407,6 +452,79 @@ export async function createGlobe(container: HTMLElement, creditContainer: HTMLE
     },
     clearPickMarker() {
       pickMarker.removeAll();
+      scene.requestRender();
+    },
+
+    setHover(fn) {
+      hoverListener = fn;
+      if (!fn) scene.canvas.style.cursor = "";
+    },
+
+    setXray(on) {
+      const t = scene.globe.translucency;
+      t.enabled = on;
+      // Nearly clear up close so buried points read clearly; a little firmer from far away so the
+      // continents still anchor the view and the far side of the planet does not crowd in.
+      t.frontFaceAlphaByDistance = new NearFarScalar(4e5, 0.18, 2.5e7, 0.55);
+      t.backFaceAlpha = 0;
+      scene.requestRender();
+    },
+
+    setSection(line, depthKm = 700) {
+      for (const p of [sectionLine, sectionWall]) if (p) scene.primitives.remove(p);
+      sectionLine = sectionWall = null;
+      sectionLabels.removeAll();
+      if (line && line.length > 1) {
+        const surface = Cartesian3.fromDegreesArrayHeights(line.flatMap((p) => [p.lon, p.lat, 3000]));
+        const gold = Color.fromCssColorString("#ffd166");
+        sectionLine = scene.primitives.add(
+          new Primitive({
+            geometryInstances: new GeometryInstance({
+              geometry: new PolylineGeometry({ positions: surface, width: 3, arcType: ArcType.NONE, vertexFormat: PolylineColorAppearance.VERTEX_FORMAT }),
+              attributes: { color: ColorGeometryInstanceAttribute.fromColor(gold) },
+            }),
+            appearance: new PolylineColorAppearance({ translucent: false }),
+            asynchronous: false,
+          }),
+        ) as Primitive;
+        sectionWall = scene.primitives.add(
+          new Primitive({
+            geometryInstances: new GeometryInstance({
+              geometry: new WallGeometry({
+                positions: Cartesian3.fromDegreesArrayHeights(line.flatMap((p) => [p.lon, p.lat, 0])),
+                minimumHeights: line.map(() => -depthKm * 1000),
+                maximumHeights: line.map(() => 0),
+                vertexFormat: PerInstanceColorAppearance.VERTEX_FORMAT,
+              }),
+              attributes: { color: ColorGeometryInstanceAttribute.fromColor(gold.withAlpha(0.16)) },
+            }),
+            appearance: new PerInstanceColorAppearance({ translucent: true, flat: true, closed: false }),
+            asynchronous: false,
+          }),
+        ) as Primitive;
+        const ends: [string, { lat: number; lon: number }][] = [["A", line[0]], ["B", line[line.length - 1]]];
+        for (const [text, p] of ends) {
+          sectionLabels.add({
+            text,
+            position: Cartesian3.fromDegrees(p.lon, p.lat, 3000),
+            font: "600 15px Inter, system-ui, sans-serif",
+            fillColor: Color.fromCssColorString("#0b1220"),
+            outlineColor: gold,
+            outlineWidth: 6,
+            style: LabelStyle.FILL_AND_OUTLINE,
+            horizontalOrigin: HorizontalOrigin.CENTER,
+            verticalOrigin: VerticalOrigin.BOTTOM,
+            pixelOffset: new Cartesian2(0, -6),
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          });
+        }
+      }
+      scene.requestRender();
+    },
+
+    setSectionPreview(a, b) {
+      preview.show = Boolean(a && b);
+      previewPositions = a && b ? Cartesian3.fromDegreesArrayHeights([a.lon, a.lat, 3000, b.lon, b.lat, 3000]) : [];
       scene.requestRender();
     },
 

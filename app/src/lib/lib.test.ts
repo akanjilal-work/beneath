@@ -2,10 +2,12 @@ import { deflateSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { normaliseKp, summariseKp } from "../data/live";
 import { boundaryClass } from "../data/plates";
+import { QuakeIndex, depthColour, magnitudePixels, quakesFromFeed, quakesFromFile } from "../data/quakes";
 import { parseHash, toHash } from "../state";
 import { decodeValues, encodeValue, sampleBilinear } from "./encoding";
 import { closestOnSegment, haversineKm, lonLatToGeoTilePixel, lonLatToTilePixel, parseLatLon, pointInPolygon } from "./geo";
 import { decodePng } from "./png";
+import { Section } from "./section";
 
 function crc32(buf: Uint8Array): number {
   let c = ~0;
@@ -164,6 +166,19 @@ describe("url state", () => {
     expect(again).toEqual(state);
   });
 
+  it("round-trips see-beneath mode and a cross-section", () => {
+    const { state } = parseHash("#layers=quakes&xray=1&xs=36.5,138,36.5,146&xw=200");
+    expect(state.xray).toBe(true);
+    expect(state.section).toEqual({ a: { lat: 36.5, lon: 138 }, b: { lat: 36.5, lon: 146 }, w: 200 });
+    expect(parseHash(toHash(state)).state).toEqual(state);
+    // Old links without these keys are unchanged, and a malformed section is ignored.
+    expect(parseHash("#lat=1&lon=2").state.section).toBeNull();
+    expect(parseHash("#xs=95,0,0,0").state.section).toBeNull();
+    expect(parseHash("#xs=1,2,3").state.section).toBeNull();
+    expect(parseHash("#xs=1,2,3,4&xw=150").state.section?.w).toBe(100);
+    expect(parseHash("#xs=1,2,3,4&xw=9999").state.section?.w).toBe(300);
+  });
+
   it("accepts the documented legacy layer names", () => {
     const { state, hadView } = parseHash("#layers=mag,deposits");
     expect(state.depth).toBe(1);
@@ -205,5 +220,90 @@ describe("plate boundaries", () => {
     expect(boundaryClass("subduction").key).toBe("SUB");
     expect(boundaryClass("osr").key).toBe("OSR");
     expect(boundaryClass("").key).toBe("OTHER");
+  });
+});
+
+describe("cross-section geometry", () => {
+  it("measures length and samples the great circle", () => {
+    // Along the equator, 10 degrees is about 1,112 km.
+    const s = new Section({ lat: 0, lon: 0 }, { lat: 0, lon: 10 });
+    expect(s.lengthKm).toBeCloseTo(1111.95, 0);
+    const mid = s.at(0.5);
+    expect(mid.lat).toBeCloseTo(0, 9);
+    expect(mid.lon).toBeCloseTo(5, 9);
+    expect(s.sample(3).map((p) => Math.round(p.lon))).toEqual([0, 5, 10]);
+  });
+  it("projects points to along-track and signed cross-track distance", () => {
+    const s = new Section({ lat: 0, lon: 0 }, { lat: 0, lon: 10 });
+    const north = s.project(1, 5);
+    expect(north.alongKm).toBeCloseTo(555.97, 0);
+    expect(north.offsetKm).toBeCloseTo(111.19, 0); // left of an eastward line is north
+    expect(s.project(-1, 5).offsetKm).toBeCloseTo(-111.19, 0);
+    expect(s.project(0, -2).alongKm).toBeLessThan(0);
+  });
+  it("works across the antimeridian", () => {
+    const s = new Section({ lat: -20, lon: 175 }, { lat: -20, lon: -175 });
+    expect(s.lengthKm).toBeGreaterThan(1040);
+    expect(s.lengthKm).toBeLessThan(1050);
+    const p = s.project(-20.1, 180);
+    expect(p.alongKm).toBeGreaterThan(500);
+    expect(p.alongKm).toBeLessThan(550);
+    expect(Math.abs(p.offsetKm)).toBeLessThan(15);
+  });
+  it("finds where another line crosses the section", () => {
+    const s = new Section({ lat: 0, lon: 0 }, { lat: 0, lon: 10 });
+    expect(s.crossing({ lat: -1, lon: 3 }, { lat: 1, lon: 3 })).toBeCloseTo(333.6, 0);
+    expect(s.crossing({ lat: 1, lon: 3 }, { lat: 2, lon: 3 })).toBeNull(); // does not reach the line
+    expect(s.crossing({ lat: -1, lon: 12 }, { lat: 1, lon: 12 })).toBeNull(); // beyond B
+  });
+});
+
+describe("earthquakes", () => {
+  const file = {
+    stride: 5,
+    fields: ["lon", "lat", "depthKm", "mag", "days"],
+    count: 3,
+    data: [142.37, 38.3, 29, 9.1, 15044, 179.9, -20, 600, 6.2, 15000, -179.9, -20.2, 550, 5.5, 15001],
+    names: { "0": "2011 Great Tohoku Earthquake, Japan" },
+  };
+  const quakes = quakesFromFile(file);
+  it("unpacks the flat catalogue", () => {
+    expect(quakes[0]).toMatchObject({ lon: 142.37, lat: 38.3, depthKm: 29, mag: 9.1, name: "2011 Great Tohoku Earthquake, Japan" });
+    expect(new Date(quakes[0].time).toISOString().slice(0, 10)).toBe("2011-03-11");
+    expect(quakes[1].name).toBeNull();
+  });
+  it("finds events near a point, across the antimeridian", () => {
+    const index = new QuakeIndex(quakesFromFile(file));
+    const s = index.summarise(180, -20.1, 100);
+    expect(s.count).toBe(2);
+    expect(s.deepest?.depthKm).toBe(600);
+    expect(index.summarise(0, 0, 100).count).toBe(0);
+    // A huge radius near a pole must not count an event twice.
+    expect(index.near(0, 89, 9000).length).toBe(new Set(index.near(0, 89, 9000)).size);
+  });
+  it("selects events in a cross-section swath", () => {
+    const index = new QuakeIndex(quakesFromFile(file));
+    const hits = index.inSwath(new Section({ lat: -20, lon: 178 }, { lat: -20, lon: -178 }), 50);
+    expect(hits.map((h) => h.quake.depthKm).sort()).toEqual([550, 600]);
+  });
+  it("merges the live feed without duplicating catalogue events", () => {
+    const index = new QuakeIndex(quakesFromFile(file));
+    const feed = {
+      features: [
+        { id: "dup", properties: { mag: 9.1, time: quakes[0].time + 3_600_000, place: "Japan", type: "earthquake" }, geometry: { coordinates: [142.37, 38.3, 29] as [number, number, number] } },
+        { id: "new", properties: { mag: 4.1, time: Date.UTC(2026, 8, 20), place: "Chile", type: "earthquake" }, geometry: { coordinates: [-71, -30, 40] as [number, number, number] } },
+        { id: "blast", properties: { mag: 3, time: Date.UTC(2026, 8, 20), place: "Mine", type: "quarry blast" }, geometry: { coordinates: [-71, -30, 0] as [number, number, number] } },
+      ],
+    };
+    const added = index.addRecent(quakesFromFeed(feed, 0));
+    expect(added.map((q) => q.name)).toEqual(["Chile"]);
+    expect(index.quakes.length).toBe(4);
+    expect(added[0].index).toBe(3);
+  });
+  it("colours by depth and sizes by magnitude", () => {
+    expect(depthColour(0)).toBe("rgb(255,69,58)");
+    expect(depthColour(700)).toBe("rgb(191,90,242)");
+    expect(magnitudePixels(9)).toBeGreaterThan(magnitudePixels(6));
+    expect(magnitudePixels(5)).toBeGreaterThanOrEqual(2);
   });
 });

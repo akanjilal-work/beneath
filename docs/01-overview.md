@@ -8,8 +8,6 @@ Rotate the Earth, peel back the surface, and see what is underneath any point on
 
 Public geophysical data (magnetic, gravity, geology, deposits) is excellent but locked in GIS formats and portals built for specialists. Beneath makes it explorable by anyone in a browser, with no login and no install.
 
-It also serves as a public showcase for magnetometry and quantum sensing work (Memorion), since magnetic anomaly data is the core layer.
-
 ## Target users
 
 - Curious general public (primary traffic driver)
@@ -24,6 +22,7 @@ It also serves as a public showcase for magnetometry and quantum sensing work (M
 - Gravity anomaly layer (global)
 - Mineral deposit points (Canada first, global legacy data second)
 - Tectonic plate boundaries
+- Earthquakes at their true depth (see-beneath mode) and cross-sections
 - Click card: plain-language summary of any point
 - Full view state in the URL for sharing
 

@@ -52,8 +52,17 @@ Estimates assume part-time solo work.
 - [ ] Performance pass against the budgets in 02
 - [ ] Accessibility pass (see 04)
 - [x] Global legacy deposits (USGS MRDS) with clear labelling
-- [ ] Memorion tie-in page
 - [ ] Launch posts (Show HN, Reddit geology and dataisbeautiful communities)
+
+## Phase 5. Beneath the surface
+
+- [x] Earthquake catalogue in the pipeline (USGS ComCat, M5+ since 1970, one request per year, checksummed)
+- [x] Earthquakes drawn on the globe, coloured by depth and sized by magnitude
+- [x] See-beneath mode: translucent surface with every earthquake at its true depth
+- [x] Live earthquakes from the USGS 7-day feed, merged without duplicates
+- [x] Cross-section tool: elevation with sea floor, magnetic, gravity, plate boundaries crossed, earthquakes by depth, shareable in the URL
+- [ ] Guided stories: fly-throughs of well-known features with a short card each
+- [ ] More public-domain layers (volcanoes, sea-floor age) where a source needs no licence terms
 
 ## Risks
 

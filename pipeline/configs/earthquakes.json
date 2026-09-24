@@ -1,0 +1,18 @@
+{
+  "id": "earthquakes",
+  "name": "Earthquakes",
+  "kind": "points",
+  "file": "earthquakes.v1.json",
+  "query": {
+    "url": "https://earthquake.usgs.gov/fdsnws/event/1/query",
+    "minMagnitude": 5,
+    "startYear": 1970,
+    "end": "2026-09-01",
+    "namedFromMagnitude": 7
+  },
+  "attribution": "USGS ANSS Comprehensive Earthquake Catalog",
+  "licence": "Public domain (US Government)",
+  "sourceUrl": "https://earthquake.usgs.gov/data/comcat/",
+  "citation": "U.S. Geological Survey, Earthquake Hazards Program. Advanced National Seismic System (ANSS) Comprehensive Catalog of Earthquake Events and Products (ComCat).",
+  "description": "Every magnitude 5 and larger earthquake since 1970, each placed at the depth where it started."
+}

@@ -34,8 +34,8 @@ class WorkerPool {
     });
   }
 
-  async terrain(url: string, size: number): Promise<Float32Array | null> {
-    const res = await this.send<TerrainRequest>({ op: "terrain", url, size }, []);
+  async terrain(url: string, size: number, seaFloor = false): Promise<Float32Array | null> {
+    const res = await this.send<TerrainRequest>({ op: "terrain", url, size, seaFloor }, []);
     return res.values ?? null;
   }
 

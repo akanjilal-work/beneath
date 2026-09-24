@@ -9,8 +9,8 @@ from .config import LAYER_ORDER
 
 
 def _build(layer: str, force: bool) -> None:
-    from .layers import coastlines, deposits, gravity, magnetic, places, plates
-    mods = {"magnetic": magnetic, "gravity": gravity, "plates": plates, "deposits": deposits, "places": places,
+    from .layers import coastlines, deposits, earthquakes, gravity, magnetic, places, plates
+    mods = {"magnetic": magnetic, "gravity": gravity, "plates": plates, "deposits": deposits, "earthquakes": earthquakes, "places": places,
             "coastlines": coastlines}
     t0 = time.time()
     if layer == "gravity":

@@ -84,6 +84,405 @@
       "bytes": 43787,
       "downloaded": "2026-09-22",
       "licence": "Open Government Licence - Canada 2.0"
+    },
+    "usgs-comcat-m5-1970.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1970-01-01&endtime=1971-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "11b4e5037f489034e2c13d11a2dc39835eea567ca55c4a3318b1969c138aa530",
+      "bytes": 116143,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1971.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1971-01-01&endtime=1972-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "629ed8bd89bde19fc82390bd05e56135e904e831fd58c4b4388a44e2d1f753d5",
+      "bytes": 161357,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1972.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1972-01-01&endtime=1973-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "9bc0c4ef82e8ab04c09c6502a9caa7d58debed762a9858f25692d6f4a67de09b",
+      "bytes": 156518,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1973.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1973-01-01&endtime=1974-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "62afd419a2392c845bc80b6d722666c3518a106d9836ebe1164e9044f5e299d3",
+      "bytes": 223434,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1974.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1974-01-01&endtime=1975-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "37535be2becc3aa7edb89f82936dc47a25206ab8edcd33cf27722d9273dcdace",
+      "bytes": 219666,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1975.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1975-01-01&endtime=1976-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "e93239f72edab499ee8a291816571ce51c6d5ed29e8dfcd403aa658770c12925",
+      "bytes": 242340,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1976.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1976-01-01&endtime=1977-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "ce2bbc5824caeb352895bb51463ee7bd3d88fb17d52417832db5eed4c91eee85",
+      "bytes": 274197,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1977.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1977-01-01&endtime=1978-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "98f1c60b6db6eb0d944e6a78e5bcd3cbe2aca6da3159f15393770dc3a5abfbe4",
+      "bytes": 276335,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1978.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1978-01-01&endtime=1979-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "e106a553c48c50936c9e698193bedcebe231d78199b7aef176a801d7ae682a48",
+      "bytes": 248960,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1979.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1979-01-01&endtime=1980-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "a3ce281ccd43fb157924603e0ddc1175b86d3641e36a3aa61fe7407580dfbb1f",
+      "bytes": 225958,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1980.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1980-01-01&endtime=1981-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "78b71fe621606440eb88b724740c9720bebdfe3074ee06b27c4ec52fb2feaa39",
+      "bytes": 219632,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1981.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1981-01-01&endtime=1982-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "2db986becee73c8fed507cce09d72e3adcac10d19c1f827ec804e2c8bf42de4e",
+      "bytes": 203321,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1982.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1982-01-01&endtime=1983-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "72651b8e672ea5f255c2fa7975fbddd4a1eeb8297ea52d1691d4a4c3a58bc03a",
+      "bytes": 240135,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1983.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1983-01-01&endtime=1984-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "11b007ec30eb8c2df0ef0046dace4869b8a1432e08e59466fd4e3c5c0846c32d",
+      "bytes": 289312,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1984.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1984-01-01&endtime=1985-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "3ee6f8df2780755feda26ec0f642dd793dca951562ad072ef271c951485e5d1e",
+      "bytes": 267102,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1985.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1985-01-01&endtime=1986-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "5fff9f07db66bacc230b98ff2897a9b2af1dc821d99c3c9b1d17acf13d243dd2",
+      "bytes": 289437,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1986.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1986-01-01&endtime=1987-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "c59bfc56ba9b2d973fb3da41f82e28863957627f3701afa362e6b9bca0df71c2",
+      "bytes": 281519,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1987.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1987-01-01&endtime=1988-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "5925e924ca78a09da6926a7d76595d62589646345e1ebe150c6a6132d5519f9b",
+      "bytes": 250244,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1988.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1988-01-01&endtime=1989-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "244c86342777a780f5e64684861f8c16b6646e06a2bd27747446bdc6a0f45311",
+      "bytes": 254410,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1989.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1989-01-01&endtime=1990-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "e33de933a932e8fc805697ec3b718f5fb89722b0b133a8e8e024dec671fe3659",
+      "bytes": 248532,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1990.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1990-01-01&endtime=1991-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "d31459d49885e16fac27af0262c6fa26feec6ba8facddf1e9ceb0d0316bbac7f",
+      "bytes": 284077,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1991.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1991-01-01&endtime=1992-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "b2288c458482c59c1c370dd4883285ba63d9f192064f47f4c3a97402876d7d86",
+      "bytes": 254627,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1992.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1992-01-01&endtime=1993-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "cf72b205f99d018a5ac4afaf8e39dcae960537571504cbb9bd12f7e76cedeff2",
+      "bytes": 269389,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1993.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1993-01-01&endtime=1994-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "c69a8ecafb29dde75b1dc862e5f1711be0644d39e40f317311de73027d9713e4",
+      "bytes": 251696,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1994.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1994-01-01&endtime=1995-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "54100c8caeedbdc9a60d810ace32168ed2fe9bca2f9fea5bb625f0f9e71d8786",
+      "bytes": 272201,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1995.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1995-01-01&endtime=1996-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "02cd4145bc36fca724440b6abb53c7d6259482a6d13421c6282b29b4ed74ca5f",
+      "bytes": 240292,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1996.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1996-01-01&endtime=1997-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "00ee9a5f581b6361e90c5acf524f93723c1eb532cf20e189a7eae821003616cc",
+      "bytes": 221066,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1997.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1997-01-01&endtime=1998-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "e83e90aa294e090db28559d757727ae657761e6d8dfd1356b1220c2ad7a7f189",
+      "bytes": 200475,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1998.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1998-01-01&endtime=1999-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "cf8ed20cb9156499c5ec2c3a34daa298dc5421170e42b1a5da3a71f378976f4c",
+      "bytes": 175152,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-1999.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=1999-01-01&endtime=2000-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "22ff6a10c1206543fe96fb0b5bf68309064e3d6122da9b8b1a4ed4c3adf17c32",
+      "bytes": 193604,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2000.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2000-01-01&endtime=2001-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "0f542758205b6b6ff442cf957fd2b556b00f696ab95b40871001a20644527951",
+      "bytes": 245575,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2001.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2001-01-01&endtime=2002-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "79c4b4628a5d20b29f661f4f732462129c33896578e61b130df658d98530c697",
+      "bytes": 222383,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2002.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2002-01-01&endtime=2003-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "d778d7db308bcd59f1a3725c7821569cf8992173dc47da6d7bf873b502a3ea8a",
+      "bytes": 215508,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2003.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2003-01-01&endtime=2004-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "16c9e53e1b9214760b2ebf2b7ff779ea418043ff5bc2422fa4f24cb2596ba7c2",
+      "bytes": 229202,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2004.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2004-01-01&endtime=2005-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "f8e245cd906a245762e831fa0527b358eb1c0b44bc0d95c5742f3cdb10dfa1b0",
+      "bytes": 282542,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2005.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2005-01-01&endtime=2006-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "dac86d32598b6cf8bb879fb4ddf6ad8e41c2ae2131f27d2c022fcab9ac892854",
+      "bytes": 311346,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2006.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2006-01-01&endtime=2007-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "4ba551f4bb1c719ef27bc087cf0e2d7b86c00830db095ee27a29b32d86a0471c",
+      "bytes": 315618,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2007.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2007-01-01&endtime=2008-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "915c678173eac9d208ec0c7e18e85506939c62c27fb6121c6a233aebe305844d",
+      "bytes": 388072,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2008.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2008-01-01&endtime=2009-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "0671678770c4e848c87c504f6322b67c30f75c9d869ca8f41c5cbfc5b55fe422",
+      "bytes": 331982,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2009.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2009-01-01&endtime=2010-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "85b7f0a05356f6aa33ed5e0866fbb95093e95fccac274bc5de4bfa5e1175cb57",
+      "bytes": 351242,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2010.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2010-01-01&endtime=2011-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "b685b435edf791772124eb9ed01aa0731d70b0d37f48ffb1fbe4dffe2e30c2df",
+      "bytes": 406479,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2011.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2011-01-01&endtime=2012-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "ff0afe0aeeaedf8be1fa296e96d02867360f4c4da4f41cd1a20373cecf7192dc",
+      "bytes": 457200,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2012.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2012-01-01&endtime=2013-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "0216373d509843d9a9a70d6d926854f4d4e6af6c9d043b961e3dad68342e03ef",
+      "bytes": 288539,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2013.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2013-01-01&endtime=2014-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "d84ca13c90bebdb24f7e0d100fae7c44a1c3d412e76df2ae7d8241ee018927e3",
+      "bytes": 277604,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2014.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2014-01-01&endtime=2015-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "244019d975765f0152e75cbe69f64da5d06a301afb4173d25a4de045c3ae467a",
+      "bytes": 312424,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2015.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2015-01-01&endtime=2016-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "85c68b7eaf0192d77f07c7dc016bd9aefd1072f521633facb68a10289a6c223a",
+      "bytes": 283282,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2016.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2016-01-01&endtime=2017-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "879852f427758ef0d588bad705fa36ea8f063c36068322ee4a591d21f404f308",
+      "bytes": 308639,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2017.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2017-01-01&endtime=2018-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "0c7dc8a468707671069e4a4292fc1a5a61749a74e2f6fcf516a9def33220adda",
+      "bytes": 286307,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2018.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2018-01-01&endtime=2019-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "c1deadc9e7a03be921003e179543d0bf61b12c11fce1eb457ac4a5e9233067d7",
+      "bytes": 323285,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2019.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2019-01-01&endtime=2020-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "31cdff5a309a389df56aa3c9d3447e8c7176c5debfc6ed0705ca333c8fdf1460",
+      "bytes": 300139,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2020.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2020-01-01&endtime=2021-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "18b21e23abc569c2eb8239650361e5404a78b2e6a5f6a26e3fa7736e3bd4baee",
+      "bytes": 264413,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2021.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2021-01-01&endtime=2022-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "a4db7cfdb39084f1983c9c2e6242bd96f0d2e245d2f6fbdafac919c48e18d851",
+      "bytes": 404872,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2022.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2022-01-01&endtime=2023-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "eea0ff83339039b81471840f7dd74f18ab01980d43374c51b85cb3e306217d5e",
+      "bytes": 319625,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2023.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2023-01-01&endtime=2024-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "18c4f6ae20dc99072e1685f04217e9fe893a013eb8ef677dc71cad93f820f6b5",
+      "bytes": 335702,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2024.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2024-01-01&endtime=2025-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "11429c34917286efbe9a5dd023adeaaa61b8f31d553a25ebb57ec756825b0f30",
+      "bytes": 284431,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2025.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2025-01-01&endtime=2026-01-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "99b16f0f1d371abc3ff6a4f0cd4285ed48932a01874293bb979482e09187b231",
+      "bytes": 405350,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
+    },
+    "usgs-comcat-m5-2026.csv": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2026-01-01&endtime=2026-09-01&minmagnitude=5&eventtype=earthquake&orderby=time-asc",
+      "sha256": "03dd792f831779138d61b546ea8574cef868b85675639d13082df0f953bc98e6",
+      "bytes": 252002,
+      "downloaded": "2026-09-23",
+      "licence": "Public domain (US Government)"
     }
   }
 }

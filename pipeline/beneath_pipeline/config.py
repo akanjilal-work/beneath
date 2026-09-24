@@ -7,7 +7,7 @@ from .paths import CONFIG_DIR, RAW_DIR
 
 DERIVED_DIR = RAW_DIR / "derived"  # intermediate grids + layer entries (gitignored)
 
-LAYER_ORDER = ["magnetic", "gravity", "plates", "deposits", "places", "coastlines"]
+LAYER_ORDER = ["magnetic", "gravity", "plates", "deposits", "earthquakes", "places", "coastlines"]
 
 
 def load_config(layer_id: str) -> dict:

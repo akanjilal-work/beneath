@@ -781,6 +781,200 @@ body.surface .layers-panel {
   }
 }
 
+/* --- see beneath and cross-sections ------------------------------------------------ */
+.tool-button {
+  display: inline-flex;
+  gap: 6px;
+  padding: 0 14px;
+  font-size: 13.5px;
+}
+.tool-button[aria-pressed="true"],
+body.drawing .tool-button {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+.xray-check {
+  margin-top: 6px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.draw-hint {
+  position: absolute;
+  z-index: 20;
+  top: calc(var(--topbar-h) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 8px 8px 16px;
+  border-radius: 999px;
+  background: var(--surface-solid);
+  border: 1px solid #ffd166;
+  box-shadow: var(--shadow);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.draw-hint[hidden] {
+  display: none;
+}
+.draw-hint .button {
+  height: 34px;
+  padding: 0 12px;
+}
+.section-panel {
+  left: 16px;
+  right: 16px;
+  bottom: calc(var(--legend-h, var(--bottombar-h)) + 8px);
+  max-height: min(580px, calc(100% - var(--topbar-h) - var(--legend-h, var(--bottombar-h)) - 24px));
+  overflow: auto;
+  padding: 14px 18px 12px;
+  z-index: 12;
+}
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 18px;
+  margin-right: 44px;
+}
+.section-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.section-title h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.section-title span {
+  color: var(--text-2);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.section-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.section-tools .button {
+  height: 34px;
+  padding: 0 12px;
+}
+.row-control.compact,
+.check.compact {
+  margin: 0;
+  gap: 8px;
+  font-size: 13px;
+}
+.section-body {
+  margin-top: 8px;
+}
+.section-loading {
+  padding: 24px 0;
+}
+.section-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font);
+}
+.section-chart .band-title {
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--text);
+}
+.section-chart .band-range,
+.section-chart .tick {
+  font-size: 11px;
+  fill: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.section-chart .band-bg {
+  fill: var(--surface-2);
+  opacity: 0.55;
+}
+.section-chart .zero {
+  stroke: var(--text-3);
+  stroke-dasharray: 3 3;
+  stroke-width: 1;
+}
+.section-chart .grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.section-chart .boundary {
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+  opacity: 0.9;
+}
+.section-chart .boundary-label {
+  font-size: 11px;
+  font-weight: 600;
+}
+.section-chart .quake {
+  opacity: 0.8;
+  stroke: rgba(0, 0, 0, 0.35);
+  stroke-width: 0.5;
+}
+.section-chart .quake.recent {
+  opacity: 1;
+  stroke: #fff;
+  stroke-width: 1.5;
+}
+.section-chart .end-label {
+  font-size: 13px;
+  font-weight: 700;
+  fill: #ffd166;
+}
+.section-note {
+  margin: 4px 0 0;
+  color: var(--text-3);
+  font-size: 12px;
+}
+body.section-open .click-card {
+  max-height: calc(100% - var(--topbar-h) - var(--legend-h, var(--bottombar-h)) - min(580px, 50vh) - 36px);
+}
+/* Wide screens: the section sits beside the layers panel instead of over it. */
+@media (min-width: 1100px) {
+  .section-panel {
+    left: 292px;
+  }
+}
+@media (max-width: 1099px) {
+  body.section-open .layers-panel {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .tool-button span {
+    display: none;
+  }
+  .tool-button {
+    padding: 0;
+  }
+  .draw-hint {
+    top: calc(var(--topbar-h) + 8px);
+    font-size: 13.5px;
+  }
+  .section-panel {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 70vh;
+    border-radius: 18px 18px 0 0;
+    z-index: 27;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+  body.section-open .click-card {
+    max-height: 62vh;
+  }
+}
+
 /* --- dialogs & loading -------------------------------------------------------------- */
 .dialog {
   max-width: min(560px, calc(100vw - 32px));

@@ -16,6 +16,8 @@ Every layer must pass a licence check before it ships. Record the result here an
 | Base imagery | Natural Earth II, shipped with CesiumJS | Raster tiles, self-hosted | Public domain | "Natural Earth II" |
 | Satellite imagery | Sentinel-2 cloudless 2024, EOX IT Services (tiles.maps.eox.at) | 10 m, Web Mercator to level 15 | CC BY-NC-SA 4.0 (non-commercial) | "Sentinel-2 cloudless 2024 by EOX IT Services GmbH (contains modified Copernicus Sentinel data 2024)" in the credits bar. For any commercial use switch `VITE_IMAGERY_URL` to the CC BY 4.0 2016 edition or a licensed provider. |
 | Terrain | Terrain Tiles on AWS (Terrarium) | About 30 m globally, finer where lidar exists | Mixed open sources, attribution required | "Terrain Tiles on AWS (SRTM, GMTED2010, ETOPO1, 3DEP, Copernicus DEM and others)" with a link to the full attribution list |
+| Earthquakes | USGS ANSS Comprehensive Earthquake Catalog (ComCat), FDSN event service | 91,625 events, M5 and larger, 1970 to 2026-09-01, with hypocentre depth | Public domain (US Government) | "USGS ANSS Comprehensive Earthquake Catalog" |
+| Recent earthquakes | USGS real-time GeoJSON feed, M2.5+ for the past 7 days, read by the browser | Points, refreshed every 10 minutes | Public domain (US Government) | "USGS earthquake feed" |
 | Live Kp index | NOAA Space Weather Prediction Center, planetary K-index JSON | 3-hourly | Public domain (US Government) | "NOAA SWPC" |
 
 Sources, checksums and download dates are in `pipeline/sources/manifest.json`.

@@ -322,6 +322,28 @@ def verify_deposits(entry: dict, rep: Report) -> None:
         print(f"  {s['id']}: {c}")
 
 
+def verify_earthquakes(entry: dict, rep: Report) -> None:
+    p = OUT_DIR / entry["file"]
+    raw = p.read_bytes()
+    gz = len(gzip.compress(raw, mtime=0))
+    print(f"\n== earthquakes: {p.name} ({len(raw) / 1e6:.2f} MB, {gz / 1e6:.2f} MB gzipped)")
+    d = json.loads(raw)
+    s, a = d["stride"], d["data"]
+    rep.check(d["fields"] == ["lon", "lat", "depthKm", "mag", "days"] and s == 5, "fields")
+    rep.check(len(a) == d["count"] * s == entry["count"] * s, f"{d['count']} events, count matches layers.json")
+    rows = [a[i:i + s] for i in range(0, len(a), s)]
+    ok = all(-180 <= r[0] <= 180 and -90 <= r[1] <= 90 and 0 <= r[2] <= 800 and r[3] >= entry["minMagnitude"]
+             for r in rows)
+    rep.check(ok, "rows in range (depth 0 to 800 km, magnitude >= minimum)")
+    rep.check(all(rows[i][4] <= rows[i + 1][4] for i in range(len(rows) - 1)), "sorted by time")
+    # Known events: 2004 Sumatra and 2011 Tohoku (both M9.1), and deep-focus quakes under Tonga-Fiji.
+    for name, lon, lat, mag in [("Sumatra 2004", 95.98, 3.29, 9.1), ("Tohoku 2011", 142.37, 38.30, 9.1)]:
+        rep.check(any(abs(r[0] - lon) < 0.05 and abs(r[1] - lat) < 0.05 and r[3] == mag for r in rows), f"{name} present")
+    rep.check(sum(r[2] > 600 and -30 < r[1] < -10 and (r[0] > 170 or r[0] < -170) for r in rows) > 100,
+              "deep-focus events under Tonga-Fiji")
+    rep.check(gz <= 2 * 1024 * 1024, "gzipped size <= 2 MB")
+
+
 def verify_places(entry: dict, rep: Report) -> None:
     p = OUT_DIR / entry["file"]
     d = json.loads(p.read_text())
@@ -353,6 +375,8 @@ def main() -> int:
             verify_plates(e, rep)
         elif e["id"] == "deposits":
             verify_deposits(e, rep)
+        elif e["id"] == "earthquakes":
+            verify_earthquakes(e, rep)
         elif e["id"] == "places":
             verify_places(e, rep)
     print("\n== outputs")

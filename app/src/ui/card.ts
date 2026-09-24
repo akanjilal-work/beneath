@@ -1,4 +1,5 @@
 import { statusLabel, type Deposit } from "../data/deposits";
+import { formatDate, type NearbySummary, type Quake } from "../data/quakes";
 import type { Boundary, Plate } from "../data/plates";
 import { formatLatLon } from "../lib/geo";
 import {
@@ -23,12 +24,26 @@ export interface PointFacts {
   boundary: { boundary: Boundary; distanceKm: number } | null;
   deposits: { deposit: Deposit; distanceKm: number }[] | null;
   depositRadiusKm: number;
+  quakes: NearbySummary | null;
+  quakeRadiusKm: number;
   picked: Deposit | null;
+  pickedQuake: Quake | null;
   /** Nearest depth stop, used to favour the layer the user is looking at. */
   depthStop: number;
 }
 
+const QUAKES_WHY =
+  "Earthquakes mark where plates grind past, pull apart or sink. Their depth traces a sinking plate: at a subduction zone, earthquakes get deeper the further they are from the trench.";
+
+/** Plain-language reading of a hypocentre depth. */
+function depthNote(depthKm: number): string {
+  if (depthKm < 70) return "Shallow: it broke the brittle crust or upper plate.";
+  if (depthKm < 300) return "Intermediate depth: inside a plate that is sinking into the mantle.";
+  return "Deep focus: hundreds of kilometres down inside a sinking plate, where rock should be too hot to snap. How these earthquakes happen is still debated.";
+}
+
 function placeTitle(f: PointFacts): string {
+  if (f.pickedQuake) return f.pickedQuake.name ?? `Magnitude ${f.pickedQuake.mag.toFixed(1)} earthquake`;
   if (f.picked) return f.picked.name;
   if (!f.place) return "Remote area";
   if (f.place.distanceKm < 15) return f.place.label;
@@ -51,6 +66,13 @@ function pickHeadline(f: PointFacts): { text: string; why: string[] } {
   if (grav) why.push(grav.why);
   if (f.plate || f.boundary) why.push(PLATES_WHY);
   if (f.deposits?.length || f.picked) why.push(DEPOSITS_WHY);
+  if (f.quakes?.count || f.pickedQuake) why.push(QUAKES_WHY);
+
+  if (f.pickedQuake) {
+    const q = f.pickedQuake;
+    const when = q.recent ? `${new Date(q.time).toISOString().slice(0, 16).replace("T", " ")} UTC` : formatDate(q.time);
+    return { text: `Magnitude ${q.mag.toFixed(1)} on ${when}, ${Math.round(q.depthKm)} km below the surface. ${depthNote(q.depthKm)}`, why };
+  }
 
   if (f.picked) {
     const d = f.picked;
@@ -74,6 +96,8 @@ export interface CardActions {
   onCopy: () => void;
   /** Fly down to ground level at a point. */
   onSurface: (lat: number, lon: number) => void;
+  /** Start drawing a cross-section from this point. */
+  onSection: (lat: number, lon: number) => void;
 }
 
 function depositItem(d: Deposit, distanceKm: number, actions: CardActions) {
@@ -103,6 +127,22 @@ export function renderCard(f: PointFacts, actions: CardActions) {
   if (f.magnetic) row("Magnetic", formatValue(f.magnetic.value, f.magnetic.units));
   if (f.gravity) row("Gravity", formatValue(f.gravity.value, f.gravity.units, 1));
   if (f.plate) row("Plate", f.plate.name);
+  if (f.quakes) {
+    const q = f.quakes;
+    row(
+      `Earthquakes within ${f.quakeRadiusKm} km`,
+      q.count ? `${q.count.toLocaleString()} since 1970` : "None recorded",
+      q.count
+        ? [
+            q.largest ? `largest M${q.largest.mag.toFixed(1)} (${formatDate(q.largest.time).slice(0, 4)})` : "",
+            q.deepest && q.deepest.depthKm >= 70 ? `deepest ${Math.round(q.deepest.depthKm)} km` : "",
+            q.recent ? `${q.recent} in the past week` : "",
+          ]
+            .filter(Boolean)
+            .join(" · ")
+        : "M5+ since 1970",
+    );
+  }
   if (f.boundary) {
     row(
       "Nearest boundary",
@@ -126,6 +166,8 @@ export function renderCard(f: PointFacts, actions: CardActions) {
 
   const surfaceButton = h("button", { class: "button primary", type: "button" }, "Go to the surface");
   surfaceButton.addEventListener("click", () => actions.onSurface(f.lat, f.lon));
+  const sectionButton = h("button", { class: "button", type: "button" }, "Section from here");
+  sectionButton.addEventListener("click", () => actions.onSection(f.lat, f.lon));
   const copyButton = h("button", { class: "button", type: "button" }, "Copy link");
   copyButton.addEventListener("click", async () => {
     actions.onCopy();
@@ -142,7 +184,7 @@ export function renderCard(f: PointFacts, actions: CardActions) {
     headline.why.length
       ? h("details", { class: "why" }, h("summary", null, "Why this matters"), headline.why.map((t) => h("p", null, t)))
       : null,
-    h("div", { class: "card-actions" }, surfaceButton, copyButton),
+    h("div", { class: "card-actions" }, surfaceButton, sectionButton, copyButton),
   ];
   content.replaceChildren(...parts.filter((p): p is HTMLElement => p !== null));
 }

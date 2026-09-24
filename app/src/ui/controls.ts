@@ -1,4 +1,5 @@
 import { COMMODITY_GROUPS } from "../data/deposits";
+import { DEPTH_GRADIENT, type QuakeIndex } from "../data/quakes";
 import type { Manifest, RasterEntry } from "../data/manifest";
 import { allBoundaryClasses, type PlateModel } from "../data/plates";
 import { getRamp } from "../lib/ramps";
@@ -17,6 +18,7 @@ export function nearestStop(depth: number): number {
 const STOP_HINTS = ["Base imagery only", "EMAG2v3, nT", "EGM2008 free-air, mGal", "PB2002 plates"];
 
 const OVERLAY_LABELS: Record<OverlayId, { label: string; hint: string }> = {
+  quakes: { label: "Earthquakes", hint: "M5+ since 1970, plus the past week" },
   deposits: { label: "Mineral deposits", hint: "Government inventories" },
   boundaries: { label: "Plate boundaries", hint: "Bird (2003) PB2002" },
   coastlines: { label: "Coastlines", hint: "Natural Earth" },
@@ -112,6 +114,7 @@ export function renderLegend(
   manifest: Manifest,
   rasters: Record<string, RasterEntry | undefined>,
   plates: PlateModel | null,
+  quakes: QuakeIndex | null,
 ) {
   const w = depthWeights(s.depth);
   const items: HTMLElement[] = [];
@@ -132,6 +135,27 @@ export function renderLegend(
           classes.map((c) => h("span", null, h("i", { class: "line", style: `background:${c.colour}` }), c.label)),
         ),
         h("div", { class: "legend-source" }, `${platesEntry.attribution} · ${platesEntry.licence}`),
+      ),
+    );
+  }
+
+  const quakesEntry = manifest.layers.find((l) => l.id === "earthquakes");
+  if (s.overlays.has("quakes") && quakesEntry && quakes) {
+    const catalogue = quakes.quakes.length - quakes.recentCount;
+    items.push(
+      h(
+        "div",
+        { class: "legend-item" },
+        h("div", { class: "legend-title" }, h("span", null, "Earthquake depth"), h("span", null, s.xray ? "shown at true depth" : "km")),
+        h("div", { class: "legend-bar", style: `background:${DEPTH_GRADIENT}` }),
+        h("div", { class: "legend-scale" }, h("span", null, "0"), h("span", null, "350"), h("span", null, "700")),
+        h(
+          "div",
+          { class: "legend-source" },
+          `${catalogue.toLocaleString()} M5+ since 1970`,
+          quakes.recentCount ? ` · ${quakes.recentCount} in the past 7 days (white ring)` : "",
+        ),
+        h("div", { class: "legend-source" }, `${quakesEntry.attribution} · ${quakesEntry.licence}`),
       ),
     );
   }
@@ -167,6 +191,12 @@ export function renderSources(manifest: Manifest) {
     ),
   );
   list.push(
+    h(
+      "div",
+      null,
+      h("strong", null, "Earthquakes in the past 7 days"),
+      h("span", null, "USGS earthquake feed (M2.5 and larger), refreshed every 10 minutes · Public domain"),
+    ),
     h(
       "div",
       null,
