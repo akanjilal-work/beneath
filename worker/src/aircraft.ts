@@ -1,8 +1,20 @@
 // Live aircraft for the app. The free ADS-B networks do not allow cross-origin reads, so this
 // Worker fetches them server-side, trims each aircraft to what the globe draws, and adds CORS.
-// Source: adsb.lol (community ADS-B receivers, data under the Open Database License).
+// Sources, tried in order: adsb.lol (ODbL) and adsb.fi (free open data API). Both are community
+// networks of volunteer receivers and return the same readsb format.
 
-export const AIRCRAFT_UPSTREAM = "https://api.adsb.lol/v2/point";
+export const AIRCRAFT_UPSTREAMS = [
+  {
+    name: "adsb.lol",
+    licence: "Open Database License (ODbL) 1.0",
+    url: (lat: number, lon: number, r: number) => `https://api.adsb.lol/v2/point/${lat}/${lon}/${r}`,
+  },
+  {
+    name: "adsb.fi",
+    licence: "adsb.fi open data, free for non-commercial use",
+    url: (lat: number, lon: number, r: number) => `https://opendata.adsb.fi/api/v2/lat/${lat}/lon/${lon}/dist/${r}`,
+  },
+];
 export const AIRCRAFT_FIELDS = ["hex", "callsign", "lon", "lat", "altM", "speedKt", "track", "type", "reg"] as const;
 
 /** Largest radius the upstream accepts, in nautical miles. */
@@ -41,7 +53,11 @@ export function aircraftQuery(params: URLSearchParams): { lat: number; lon: numb
 }
 
 /** Keep aircraft with a position; altitudes become metres (0 on the ground). */
-export function normaliseAircraft(body: Upstream, nowSeconds: number): AircraftFile {
+export function normaliseAircraft(
+  body: Upstream,
+  nowSeconds: number,
+  source: { name: string; licence: string } = AIRCRAFT_UPSTREAMS[0],
+): AircraftFile {
   const rows = (body.ac ?? body.aircraft ?? []).flatMap((a) => {
     const lat = num(a.lat);
     const lon = num(a.lon);
@@ -61,8 +77,8 @@ export function normaliseAircraft(body: Upstream, nowSeconds: number): AircraftF
   });
   return {
     time: num(body.now) ?? nowSeconds,
-    source: "adsb.lol",
-    licence: "Open Database License (ODbL) 1.0",
+    source: source.name,
+    licence: source.licence,
     fields: AIRCRAFT_FIELDS,
     aircraft: rows,
   };

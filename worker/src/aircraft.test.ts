@@ -33,3 +33,16 @@ describe("normaliseAircraft", () => {
     ]);
   });
 });
+
+describe("aircraft sources", () => {
+  it("builds each network's point query and labels the file with the source used", async () => {
+    const { AIRCRAFT_UPSTREAMS } = await import("./aircraft");
+    expect(AIRCRAFT_UPSTREAMS.map((u) => u.url(43.5, -79.5, 100))).toEqual([
+      "https://api.adsb.lol/v2/point/43.5/-79.5/100",
+      "https://opendata.adsb.fi/api/v2/lat/43.5/lon/-79.5/dist/100",
+    ]);
+    const file = normaliseAircraft({ aircraft: [{ hex: "a", lat: 1, lon: 2 }] }, 5, AIRCRAFT_UPSTREAMS[1]);
+    expect(file.source).toBe("adsb.fi");
+    expect(file.aircraft.length).toBe(1);
+  });
+});

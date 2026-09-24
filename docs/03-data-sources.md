@@ -19,7 +19,7 @@ Every layer must pass a licence check before it ships. Record the result here an
 | Earthquakes | USGS ANSS Comprehensive Earthquake Catalog (ComCat), FDSN event service | 91,625 events, M5 and larger, 1970 to 2026-09-01, with hypocentre depth | Public domain (US Government) | "USGS ANSS Comprehensive Earthquake Catalog" |
 | Recent earthquakes | USGS real-time GeoJSON feed, M2.5+ for the past 7 days, read by the browser | Points, refreshed every 10 minutes | Public domain (US Government) | "USGS earthquake feed" |
 | Satellites | CelesTrak active satellites, two-line elements, snapshot daily at deploy | About 16,000 objects; positions computed in the browser with SGP4 | Free public data (from US Space Force catalogue) | "CelesTrak" |
-| Aircraft | adsb.lol community ADS-B network, read through the Beneath Worker | Live positions around the view, every 10 s | Open Database License (ODbL) 1.0 | "adsb.lol" |
+| Aircraft | adsb.lol community ADS-B network (adsb.fi as a fallback), read through the Beneath Worker | Live positions around the view, every 10 s | adsb.lol: Open Database License (ODbL) 1.0; adsb.fi: free open data for non-commercial use | "adsb.lol" or "adsb.fi" |
 | Traffic cameras | Caltrans CCTV status feeds and 511NY camera list, snapshot daily; images load live from each agency | About 5,300 cameras | Public agency data; images belong to each agency | "Caltrans", "511NY" |
 | US close-up imagery | USGS The National Map orthoimagery (NAIP and high-resolution orthos) | About 1 m, US only, close-up views | Public domain (US Government) | "USGS The National Map" |
 | Live Kp index | NOAA Space Weather Prediction Center, planetary K-index JSON | 3-hourly | Public domain (US Government) | "NOAA SWPC" |

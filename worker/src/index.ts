@@ -3,7 +3,7 @@
 // so the app can read it either from the R2 custom domain or from this Worker's URL.
 // It also proxies live aircraft (/aircraft), which the free ADS-B feeds do not serve to browsers.
 
-import { AIRCRAFT_UPSTREAM, aircraftQuery, normaliseAircraft } from "./aircraft";
+import { AIRCRAFT_UPSTREAMS, aircraftQuery, normaliseAircraft } from "./aircraft";
 import { normaliseKp, SWPC_KP_URL } from "./kp";
 
 export interface Env {
@@ -65,15 +65,22 @@ export default {
     if (url.pathname === "/aircraft") {
       const q = aircraftQuery(url.searchParams);
       if (!q) return new Response("Expected lat, lon and r (nautical miles)", { status: 400, headers: cors });
-      // Cloudflare caches the upstream call for a few seconds, so many viewers of the same area
-      // cost one request.
-      const res = await fetch(`${AIRCRAFT_UPSTREAM}/${q.lat}/${q.lon}/${q.radius}`, {
-        headers: { "User-Agent": "beneath-live-feed (+https://github.com/akanjilal-work/beneath)" },
-        cf: { cacheTtl: 8, cacheEverything: true },
-      });
-      if (!res.ok) return new Response(`Aircraft source returned ${res.status}`, { status: 502, headers: cors });
-      const file = normaliseAircraft(await res.json(), Date.now() / 1000);
-      return Response.json(file, { headers: { ...cors, "Cache-Control": "public, max-age=5" } });
+      // Cloudflare caches each upstream call for a few seconds, so many viewers of the same area
+      // cost one request. If one network refuses (they rate-limit shared cloud addresses), try the next.
+      const failures: string[] = [];
+      for (const up of AIRCRAFT_UPSTREAMS) {
+        const res = await fetch(up.url(q.lat, q.lon, q.radius), {
+          headers: { "User-Agent": "beneath-live-feed (+https://github.com/akanjilal-work/beneath)" },
+          cf: { cacheTtl: 8, cacheEverything: true },
+        });
+        if (!res.ok) {
+          failures.push(`${up.name} ${res.status}`);
+          continue;
+        }
+        const file = normaliseAircraft(await res.json(), Date.now() / 1000, up);
+        return Response.json(file, { headers: { ...cors, "Cache-Control": "public, max-age=5" } });
+      }
+      return new Response(`Aircraft sources unavailable: ${failures.join(", ")}`, { status: 502, headers: cors });
     }
 
     if (url.pathname === `/${KP_KEY}`) {

@@ -218,7 +218,7 @@ export function renderLegend(
         { class: "legend-item" },
         h("div", { class: "legend-title" }, h("span", null, "Aircraft"), h("span", null, status)),
         h("div", { class: "legend-keys" }, h("span", null, h("i", { style: "background:#ffd166" }), "Flying"), h("span", null, h("i", { style: "background:#9aa6bd" }), "On the ground")),
-        h("div", { class: "legend-source" }, "adsb.lol community receivers · ODbL · refreshed every 10 s"),
+        h("div", { class: "legend-source" }, `${a.state === "ok" ? a.source : "adsb.lol / adsb.fi"} community receivers · refreshed every 10 s`),
       ),
     );
   }
@@ -257,7 +257,7 @@ export function renderSources(manifest: Manifest) {
       "div",
       null,
       h("strong", null, "Aircraft"),
-      h("span", null, "adsb.lol community ADS-B network · Open Database License (ODbL) 1.0"),
+      h("span", null, "adsb.lol (Open Database License 1.0), with adsb.fi open data as a fallback · community ADS-B receivers"),
     ),
     h(
       "div",

@@ -71,7 +71,7 @@ Estimates assume part-time solo work.
 - [x] Satellites: daily CelesTrak snapshot, SGP4 in the browser, orbit loop on click
 - [x] Traffic cameras: Caltrans and 511NY, daily camera list, live images in the card
 - [x] Aircraft: Worker proxy for adsb.lol, polled every 10 s around the view
-- [ ] Deploy the Worker (needs a Cloudflare account; see 06) so aircraft go live
+- [x] Deploy the Worker (https://beneath-live.akanjilal.workers.dev) so aircraft go live
 - [ ] More cameras outside the US (Windy webcams need a free API key)
 
 ## Risks

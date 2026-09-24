@@ -16,15 +16,16 @@ const ICON =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M16 2c1.2 0 2 1.3 2 3v7.5l11 6.5v3l-11-3.3V25l3.5 2.6V30L16 28.6 10.5 30v-2.4L14 25v-6.3L3 22v-3l11-6.5V5c0-1.7.8-3 2-3z" fill="#fff" stroke="#0b1220" stroke-width="1.4" stroke-linejoin="round"/></svg>',
   );
 
-async function fetchAircraft(lat: number, lon: number, radiusNm: number): Promise<Aircraft[]> {
+async function fetchAircraft(lat: number, lon: number, radiusNm: number): Promise<{ planes: Aircraft[]; source: string }> {
   const url = new URL("aircraft", LIVE_PROXY_URL.endsWith("/") ? LIVE_PROXY_URL : `${LIVE_PROXY_URL}/`);
   url.search = new URLSearchParams({ lat: lat.toFixed(2), lon: lon.toFixed(2), r: String(Math.round(radiusNm)) }).toString();
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Aircraft feed returned ${res.status}`);
-  return aircraftFromFile((await res.json()) as AircraftFile);
+  const file = (await res.json()) as AircraftFile;
+  return { planes: aircraftFromFile(file), source: file.source };
 }
 
-export type AircraftStatus = { state: "off" } | { state: "zoom" } | { state: "ok"; count: number } | { state: "error" };
+export type AircraftStatus = { state: "off" } | { state: "zoom" } | { state: "ok"; count: number; source: string } | { state: "error" };
 
 /**
  * Live aircraft around the view. Polls the Worker every 10 seconds while the camera is low enough,
@@ -83,8 +84,9 @@ export class AircraftLayer {
     }
     const radiusNm = Math.min(250, Math.max(30, (v.heightM / 1000) * 0.9 / 1.852));
     let planes: Aircraft[];
+    let source: string;
     try {
-      planes = await fetchAircraft(v.lat, v.lon, radiusNm);
+      ({ planes, source } = await fetchAircraft(v.lat, v.lon, radiusNm));
     } catch (err) {
       console.warn(err);
       this.statusListener({ state: "error" });
@@ -117,7 +119,7 @@ export class AircraftLayer {
       }
     }
     this.move();
-    this.statusListener({ state: "ok", count: this.items.size });
+    this.statusListener({ state: "ok", count: this.items.size, source });
   }
 
   private move() {
