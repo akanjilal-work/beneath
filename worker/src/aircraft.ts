@@ -86,8 +86,8 @@ export function normaliseAircraft(
 
 // --- worldwide overview ---------------------------------------------------------------------
 // OpenSky returns every aircraft it tracks in one call. Anonymous access allows roughly one global
-// call every 15 minutes, so the Worker's cron fetches it and stores the result in R2; the app
-// reads that copy when the view is too wide for the live point queries.
+// call every 15 minutes, so a scheduled GitHub workflow (scripts/aircraft-overview.ts) fetches it
+// and stores the result in R2; the app reads that copy when the view is too wide for live queries.
 
 export const OPENSKY_ALL = "https://opensky-network.org/api/states/all";
 export const GLOBAL_AIRCRAFT_KEY = "live/aircraft-global.json";

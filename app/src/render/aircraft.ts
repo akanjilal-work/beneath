@@ -6,7 +6,7 @@ export const aircraftAvailable = Boolean(LIVE_PROXY_URL);
 
 /**
  * Below this camera height aircraft are live (polled every 10 s for the area in view). Above it the
- * layer shows a worldwide overview that the Worker refreshes every 15 minutes.
+ * layer shows a worldwide overview refreshed every 15 minutes (see worker/scripts/aircraft-overview.ts).
  */
 export const AIRCRAFT_MAX_VIEW_M = 1_500_000;
 const OVERVIEW_POLL_MS = 5 * 60_000;
