@@ -59,7 +59,7 @@ jobs:
           ONTARIO_511_KEY: ${{ secrets.ONTARIO_511_KEY }}
           WINDY_API_KEY: ${{ secrets.WINDY_API_KEY }}
         run: node scripts/snapshot-live.mjs dist/data/live https://beneath.akanjilal.dev/data/live/
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v3
         with:
           path: app/dist
