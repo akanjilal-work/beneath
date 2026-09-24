@@ -60,7 +60,7 @@ jobs:
           WINDY_API_KEY: ${{ secrets.WINDY_API_KEY }}
         run: node scripts/snapshot-live.mjs dist/data/live https://beneath.akanjilal.dev/data/live/
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: app/dist
 
